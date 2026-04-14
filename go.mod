@@ -8,6 +8,7 @@ require (
 	github.com/tinywasm/mcp v0.1.1
 	github.com/tinywasm/orm v0.6.0
 	github.com/tinywasm/sqlite v0.2.0
+	github.com/tinywasm/unixid v0.2.23
 )
 
 require (
@@ -21,7 +22,6 @@ require (
 	github.com/tinywasm/form v0.2.0 // indirect
 	github.com/tinywasm/json v0.4.0 // indirect
 	github.com/tinywasm/time v0.3.1 // indirect
-	github.com/tinywasm/unixid v0.2.23 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	modernc.org/libc v1.69.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
