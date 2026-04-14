@@ -1,4 +1,5 @@
 # item-catalog
+<img src="docs/img/badges.svg">
 
 Item catalog MCP module for the Velty ecosystem. Manages a unified catalog of services and products.
 
