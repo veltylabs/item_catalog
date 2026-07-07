@@ -38,9 +38,9 @@ func New(db *orm.DB, deps Deps) (*Module, error) {
 
 // Service methods
 
-func (m *Module) GetItem(tenantID, id string) (CatalogItem, error) {
+func (m *Module) GetItem(tenantId, id string) (CatalogItem, error) {
 	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.ID).Eq(id).Where(CatalogItem_.TenantID).Eq(tenantID)
+	qb := m.db.Query(&item).Where(CatalogItem_.Id).Eq(id).Where(CatalogItem_.TenantId).Eq(tenantId)
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
 		if err == orm.ErrNotFound {
@@ -51,9 +51,9 @@ func (m *Module) GetItem(tenantID, id string) (CatalogItem, error) {
 	return item, nil
 }
 
-func (m *Module) FindBySKU(tenantID, sku string) (CatalogItem, error) {
+func (m *Module) FindBySKU(tenantId, sku string) (CatalogItem, error) {
 	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.SKU).Eq(sku).Where(CatalogItem_.TenantID).Eq(tenantID)
+	qb := m.db.Query(&item).Where(CatalogItem_.Sku).Eq(sku).Where(CatalogItem_.TenantId).Eq(tenantId)
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
 		if err == orm.ErrNotFound {
@@ -64,9 +64,9 @@ func (m *Module) FindBySKU(tenantID, sku string) (CatalogItem, error) {
 	return item, nil
 }
 
-func (m *Module) ListItems(tenantID string, filter ItemFilter) ([]CatalogItem, error) {
+func (m *Module) ListItems(tenantId string, filter ItemFilter) ([]CatalogItem, error) {
 	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.TenantID).Eq(tenantID)
+	qb := m.db.Query(&item).Where(CatalogItem_.TenantId).Eq(tenantId)
 	if filter.Type != "" {
 		qb = qb.Where(CatalogItem_.Type).Eq(filter.Type)
 	}
@@ -74,10 +74,10 @@ func (m *Module) ListItems(tenantID string, filter ItemFilter) ([]CatalogItem, e
 		qb = qb.Where(CatalogItem_.IsActive).Eq(true)
 	}
 	if filter.Limit > 0 {
-		qb = qb.Limit(filter.Limit)
+		qb = qb.Limit(int(filter.Limit))
 	}
 	if filter.Offset > 0 {
-		qb = qb.Offset(filter.Offset)
+		qb = qb.Offset(int(filter.Offset))
 	}
 	results, err := ReadAllCatalogItem(qb)
 	if err != nil {
@@ -92,12 +92,12 @@ func (m *Module) ListItems(tenantID string, filter ItemFilter) ([]CatalogItem, e
 
 func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
 	// Validate SKU uniqueness per tenant
-	existing, err := m.FindBySKU(item.TenantID, item.SKU)
-	if err == nil && existing.ID != "" {
+	existing, err := m.FindBySKU(item.TenantId, item.Sku)
+	if err == nil && existing.Id != "" {
 		return CatalogItem{}, ErrAlreadyExists
 	}
 
-	item.ID = m.uid.GetNewID()
+	item.Id = m.uid.GetNewID()
 	item.UpdatedAt = time.Now()
 	if err := m.db.Create(&item); err != nil {
 		return CatalogItem{}, err
@@ -108,47 +108,47 @@ func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
 
 func (m *Module) UpdateItem(item CatalogItem) (CatalogItem, error) {
 	// Verify item exists and belongs to tenant
-	_, err := m.GetItem(item.TenantID, item.ID)
+	_, err := m.GetItem(item.TenantId, item.Id)
 	if err != nil {
 		return CatalogItem{}, err
 	}
 
 	item.UpdatedAt = time.Now()
-	if err := m.db.Update(&item, orm.Eq(CatalogItem_.ID, item.ID)); err != nil {
+	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
 		return CatalogItem{}, err
 	}
 	m.publish("catalog.item.updated", item)
 	return item, nil
 }
 
-func (m *Module) DeactivateItem(tenantID, id string) error {
-	item, err := m.GetItem(tenantID, id)
+func (m *Module) DeactivateItem(tenantId, id string) error {
+	item, err := m.GetItem(tenantId, id)
 	if err != nil {
 		return err
 	}
 	item.IsActive = false
 	item.UpdatedAt = time.Now()
-	if err := m.db.Update(&item, orm.Eq(CatalogItem_.ID, item.ID)); err != nil {
+	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
 		return err
 	}
-	m.publish("catalog.item.deactivated", map[string]string{"tenant_id": tenantID, "id": id})
+	m.publish("catalog.item.deactivated", map[string]string{"tenant_id": tenantId, "id": id})
 	return nil
 }
 
-func (m *Module) DeleteItem(tenantID, id string) error {
-	item, err := m.GetItem(tenantID, id)
+func (m *Module) DeleteItem(tenantId, id string) error {
+	item, err := m.GetItem(tenantId, id)
 	if err != nil {
 		return err
 	}
-	if err := m.db.Delete(&item, orm.Eq(CatalogItem_.ID, item.ID)); err != nil {
+	if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
 		return err
 	}
-	m.publish("catalog.item.deleted", map[string]string{"tenant_id": tenantID, "id": id})
+	m.publish("catalog.item.deleted", map[string]string{"tenant_id": tenantId, "id": id})
 	return nil
 }
 
-func (m *Module) ServiceExists(tenantID, serviceID string) (bool, error) {
-	item, err := m.GetItem(tenantID, serviceID)
+func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
+	item, err := m.GetItem(tenantId, serviceId)
 	if err != nil {
 		if err == ErrNotFound {
 			return false, nil
@@ -166,22 +166,22 @@ func (m *Module) publish(event string, payload any) {
 
 // UI methods
 
-func (m *Module) RenderList(tenantID, filter string) string {
+func (m *Module) RenderList(tenantId, filter string) string {
 	if m.ui == nil {
 		return ""
 	}
-	items, _ := m.ListItems(tenantID, ItemFilter{Type: filter, ActiveOnly: true})
+	items, _ := m.ListItems(tenantId, ItemFilter{Type: filter, ActiveOnly: true})
 	return m.ui.RenderItemList(items, filter)
 }
 
-func (m *Module) RenderForm(tenantID, id string) string {
+func (m *Module) RenderForm(tenantId, id string) string {
 	if m.ui == nil {
 		return ""
 	}
 	if id == "" {
 		return m.ui.RenderItemForm(nil)
 	}
-	item, _ := m.GetItem(tenantID, id)
+	item, _ := m.GetItem(tenantId, id)
 	return m.ui.RenderItemForm(&item)
 }
 
@@ -254,7 +254,7 @@ func (m *Module) mcpListItems(ctx *context.Context, req mcp.Request) (*mcp.Resul
 		return nil, err
 	}
 	filter := ItemFilter{Type: args.Type, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
-	items, err := m.ListItems(args.TenantID, filter)
+	items, err := m.ListItems(args.TenantId, filter)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
@@ -275,7 +275,7 @@ func (m *Module) mcpGetItem(ctx *context.Context, req mcp.Request) (*mcp.Result,
 	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
-	item, err := m.GetItem(args.TenantID, args.ID)
+	item, err := m.GetItem(args.TenantId, args.Id)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
@@ -291,7 +291,7 @@ func (m *Module) mcpFindBySKU(ctx *context.Context, req mcp.Request) (*mcp.Resul
 	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
-	item, err := m.FindBySKU(args.TenantID, args.SKU)
+	item, err := m.FindBySKU(args.TenantId, args.Sku)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
@@ -339,7 +339,7 @@ func (m *Module) mcpDeactivateItem(ctx *context.Context, req mcp.Request) (*mcp.
 	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
-	if err := m.DeactivateItem(args.TenantID, args.ID); err != nil {
+	if err := m.DeactivateItem(args.TenantId, args.Id); err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
 	return mcp.Text("item deactivated"), nil
@@ -350,7 +350,7 @@ func (m *Module) mcpDeleteItem(ctx *context.Context, req mcp.Request) (*mcp.Resu
 	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
-	if err := m.DeleteItem(args.TenantID, args.ID); err != nil {
+	if err := m.DeleteItem(args.TenantId, args.Id); err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
 	return mcp.Text("item deleted"), nil

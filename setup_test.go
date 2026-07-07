@@ -1,9 +1,8 @@
-package tests
+package itemcatalog
 
 import (
 	"fmt"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 type MockUI struct {
@@ -11,12 +10,12 @@ type MockUI struct {
 	RenderItemFormCalled bool
 }
 
-func (m *MockUI) RenderItemList(items []itemcatalog.CatalogItem, activeFilter string) string {
+func (m *MockUI) RenderItemList(items []CatalogItem, activeFilter string) string {
 	m.RenderItemListCalled = true
 	return fmt.Sprintf("List: %d items", len(items))
 }
 
-func (m *MockUI) RenderItemForm(item *itemcatalog.CatalogItem) string {
+func (m *MockUI) RenderItemForm(item *CatalogItem) string {
 	m.RenderItemFormCalled = true
 	if item == nil {
 		return "Empty Form"
