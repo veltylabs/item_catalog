@@ -2,9 +2,9 @@
 
 > This plan is dispatched via the CodeJob workflow. See skill: **agents-workflow**.
 
-⚠️ **No despachar todavía.** Requiere una versión de `github.com/tinywasm/orm` con soporte para leer
-`model.Definition` y que siga generando el helper `<Struct>_.Campo` (ver §5, punto crítico) — gate 2
-del refactor de modelo, en desarrollo al momento de escribir este plan.
+✅ **Desbloqueado.** `github.com/tinywasm/orm@v0.9.24` (con `fmt@v0.25.1`) genera el helper
+`<Struct>_.Campo` de forma automática (always-on) para modelos con DB. Ojo con el cambio de casing
+puro (`Id`/`Sku`/`TenantId`, no `ID`/`SKU`/`TenantID`) descrito en §5.3.
 
 Eres un agente **sin contexto previo** y **solo tienes este repositorio** (`item_catalog`). Plan
 autocontenido: todo contrato, regla y ejemplo está inline.
@@ -205,44 +205,51 @@ var DeleteItemArgsModel = model.Definition{
 }
 ```
 
-## 5. Pasos (con un punto crítico)
+## 5. Pasos
+
+> **Dependencias:** `go get github.com/tinywasm/orm@v0.9.24` (arrastra `github.com/tinywasm/fmt@v0.25.1`).
+> Reconstruye `ormc` desde esa versión antes de regenerar.
 
 1. Reescribe `model.go` con el contenido de §4. Las interfaces (`UIAdapter`, `EventPublisher`,
    `CatalogService`) quedan intactas en el mismo archivo o donde estén hoy.
-2. Regenera `model_orm.go` (ormc actualizado).
-3. **Punto crítico — verifica que se siga generando el helper de campos tipados.** Hoy `ormc` genera,
-   para `CatalogItem` (marcado `// orm:typed_fields`), una variable:
+   **Sin ninguna anotación** — la directiva `// orm:typed_fields` **ya no existe** (removida en orm
+   v0.9.24).
+2. Regenera `model_orm.go` con el ormc de v0.9.24.
+3. **El helper de campos tipados ahora es automático (always-on) para todo modelo con DB.** ormc emite:
    ```go
-   var CatalogItem_ = struct{ ID, TenantID, SKU, Name, ... string }{ ID: "id", TenantID: "tenant_id", ... }
+   var CatalogItem_ = struct{ Id, TenantId, Sku, Name, ... string }{ Id: "id", TenantId: "tenant_id", Sku: "sku", ... }
    ```
-   Este módulo la usa **activamente** en consultas reales, ejemplo (`mcp.go`):
-   ```go
-   qb := m.db.Query(&item).Where(CatalogItem_.SKU).Eq(sku).Where(CatalogItem_.TenantID).Eq(tenantID)
-   ```
-   Si la versión nueva de `ormc` **no** genera `CatalogItem_` a partir de la `Definition`, este código
-   **no compila**. No sigas con la migración si el `ormc` que estás usando no emite este helper —
-   repórtalo como bloqueante en vez de improvisar un reemplazo.
-4. Ajusta `mcp.go`/tests: los tipos de `Limit`/`Offset` pasan a `int64` — ajusta literales/conversión
-   donde el compilador lo exija.
+   ⚠️ **El casing cambió a algorítmico puro (sin diccionario de acrónimos):** `id`→`Id`, `sku`→`Sku`,
+   `tenant_id`→`TenantId` (ya **no** `ID`/`SKU`/`TenantID`). Esto afecta **dos** superficies:
+   - **El helper:** `CatalogItem_.SKU` → `CatalogItem_.Sku`, `.ID` → `.Id`, `.TenantID` → `.TenantId`.
+   - **Los campos del struct generado:** `CatalogItem.ID/SKU/TenantID` → `CatalogItem.Id/Sku/TenantId`.
+     Como `CatalogItem` es el tipo público del módulo, actualiza **todas** las referencias
+     (`item.ID`→`item.Id`, `item.SKU`→`item.Sku`, etc.) en `mcp.go`, `view.go`, tests y cualquier
+     consumidor. Las **claves JSON/columnas del wire NO cambian** (siguen snake).
+4. Ajusta `mcp.go`/tests para el nuevo casing y para los tipos `Limit`/`Offset` que pasan a `int64`
+   (mapeo fijo `FieldInt`→`int64`); añade conversiones donde el compilador lo exija.
 
 ## 6. Fuera de alcance
 
 - No tocar las interfaces (`UIAdapter`, `EventPublisher`, `CatalogService`).
-- No cambiar nombres de tabla/columna ni comportamiento.
-- No inventar un reemplazo del helper `CatalogItem_` si `ormc` no lo genera — repórtalo (§5.3).
+- No cambiar nombres de tabla/columna ni las claves JSON del wire (siguen snake).
+- **No añadir** la directiva `// orm:typed_fields` (ya no existe) ni ningún opt-in.
+- No parchear/forkear `ormc` — el fix está publicado aguas arriba (orm v0.9.24).
 
 ## 7. Criterio de aceptación
 
-- `gotest ./...` verde.
-- `model_orm.go` regenerado compila, incluyendo `var CatalogItem_ = struct{...}{...}` con las mismas
-  claves que usa `mcp.go` hoy.
+- `gotest ./...` verde con `go.mod` en `orm v0.9.24` / `fmt v0.25.1`.
+- `model_orm.go` regenerado compila, incluyendo `var CatalogItem_ = struct{...}{...}` con casing puro
+  (`Id`, `Sku`, `TenantId`, …) y valores = columnas snake.
+- `mcp.go` (y demás consumidores) usan el nuevo casing: `CatalogItem_.{Id,Sku,TenantId,Type,IsActive}`
+  y `item.Id`/`item.Sku`/`item.TenantId`.
 - `Limit`/`Offset` son `int64` en todo el código consumidor.
-- No queda struct plano con tags `db:` en `model.go`.
+- No queda struct plano con tags `db:` ni directiva `ormc:`/`orm:` en `model.go`.
 
 ## 8. Etapas
 
 | # | Etapa | Salida | Criterio |
 |---|---|---|---|
-| 1 | Reescribir `model.go` | Definitions de §4 | compila (ormc actualizado) |
-| 2 | Regenerar `model_orm.go` | struct + plomería + `CatalogItem_` | helper de campos presente (§5.3) |
-| 3 | Ajustar `int64` en callers | `mcp.go`/tests actualizados | `gotest ./...` verde |
+| 1 | `go get` orm v0.9.24 + reescribir `model.go` | Definitions de §4, sin directiva | compila |
+| 2 | Regenerar `model_orm.go` | struct + plomería + `CatalogItem_` (automático) | helper presente con casing puro |
+| 3 | Actualizar casing + `int64` en callers | `mcp.go`/`view.go`/tests | `gotest ./...` verde |
