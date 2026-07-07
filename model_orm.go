@@ -3,81 +3,79 @@
 package itemcatalog
 
 import (
-	"github.com/tinywasm/fmt"
+	"github.com/tinywasm/model"
 	"github.com/tinywasm/orm"
 )
 
-func (m *CatalogItem) ModelName() string {
-	return "catalog_item"
+type CatalogItem struct {
+	Id string
+	TenantId string
+	Sku string
+	Name string
+	Description string
+	Category string
+	Type string
+	Price float64
+	Currency string
+	IsActive bool
+	UpdatedAt int64
 }
 
-var _schemaCatalogItem = []fmt.Field{
-		{Name: "id", Type: fmt.FieldText, DB: &fmt.FieldDB{PK: true}},
-		{Name: "tenant_id", Type: fmt.FieldText, NotNull: true},
-		{Name: "sku", Type: fmt.FieldText, NotNull: true},
-		{Name: "name", Type: fmt.FieldText, NotNull: true},
-		{Name: "description", Type: fmt.FieldText},
-		{Name: "category", Type: fmt.FieldText},
-		{Name: "type", Type: fmt.FieldText, NotNull: true},
-		{Name: "price", Type: fmt.FieldFloat, NotNull: true},
-		{Name: "currency", Type: fmt.FieldText, NotNull: true},
-		{Name: "is_active", Type: fmt.FieldBool, NotNull: true},
-		{Name: "updated_at", Type: fmt.FieldInt, NotNull: true},
-	}
+func (m *CatalogItem) ModelName() string { return "catalog_item" }
 
-func (m *CatalogItem) Schema() []fmt.Field { return _schemaCatalogItem }
+func (m *CatalogItem) Schema() []model.Field { return CatalogItemModel.Fields }
 
-func (m *CatalogItem) Pointers() []any { return []any{&m.ID, &m.TenantID, &m.SKU, &m.Name, &m.Description, &m.Category, &m.Type, &m.Price, &m.Currency, &m.IsActive, &m.UpdatedAt} }
+func (m *CatalogItem) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.Sku, &m.Name, &m.Description, &m.Category, &m.Type, &m.Price, &m.Currency, &m.IsActive, &m.UpdatedAt} }
 
 func (m *CatalogItem) IsNil() bool { return m == nil }
 
-func (m *CatalogItem) EncodeFields(w fmt.FieldWriter) {
-	w.String("id", m.ID)
-	w.String("tenant_id", m.TenantID)
-	w.String("sku", m.SKU)
+func (m *CatalogItem) EncodeFields(w model.FieldWriter) {
+	w.String("id", m.Id)
+	w.String("tenant_id", m.TenantId)
+	w.String("sku", m.Sku)
 	w.String("name", m.Name)
 	w.String("description", m.Description)
 	w.String("category", m.Category)
 	w.String("type", m.Type)
-	w.Float("price", float64(m.Price))
+	w.Float("price", m.Price)
 	w.String("currency", m.Currency)
 	w.Bool("is_active", m.IsActive)
-	w.Int("updated_at", int64(m.UpdatedAt))
+	w.Int("updated_at", m.UpdatedAt)
 }
 
-func (m *CatalogItem) DecodeFields(r fmt.FieldReader) {
-	if v, ok := r.String("id"); ok { m.ID = v }
-	if v, ok := r.String("tenant_id"); ok { m.TenantID = v }
-	if v, ok := r.String("sku"); ok { m.SKU = v }
+func (m *CatalogItem) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("sku"); ok { m.Sku = v }
 	if v, ok := r.String("name"); ok { m.Name = v }
 	if v, ok := r.String("description"); ok { m.Description = v }
 	if v, ok := r.String("category"); ok { m.Category = v }
 	if v, ok := r.String("type"); ok { m.Type = v }
-	if v, ok := r.Float("price"); ok { m.Price = float64(v) }
+	if v, ok := r.Float("price"); ok { m.Price = v }
 	if v, ok := r.String("currency"); ok { m.Currency = v }
 	if v, ok := r.Bool("is_active"); ok { m.IsActive = v }
-	if v, ok := r.Int("updated_at"); ok { m.UpdatedAt = int64(v) }
+	if v, ok := r.Int("updated_at"); ok { m.UpdatedAt = v }
 }
 
 type CatalogItemList []*CatalogItem
 
-func (s *CatalogItemList) Schema() []fmt.Field { return nil }
+func (s *CatalogItemList) Schema() []model.Field { return nil }
 func (s *CatalogItemList) Pointers() []any     { return nil }
 func (s *CatalogItemList) Len() int             { return len(*s) }
-func (s *CatalogItemList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *CatalogItemList) Append() fmt.Fielder  { v := &CatalogItem{}; *s = append(*s, v); return v }
+func (s *CatalogItemList) At(i int) model.Fielder { return (*s)[i] }
+func (s *CatalogItemList) Append() model.Fielder  { v := &CatalogItem{}; *s = append(*s, v); return v }
 func (s *CatalogItemList) IsNil() bool          { return s == nil }
-func (s *CatalogItemList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *CatalogItemList) DecodeFields(_ fmt.FieldReader) {}
+func (s *CatalogItemList) EncodeFields(_ model.FieldWriter) {}
+func (s *CatalogItemList) DecodeFields(_ model.FieldReader) {}
 
 func (m *CatalogItem) Validate(action byte) error {
-	return fmt.ValidateFields(action, m)
+	return model.ValidateFields(action, m)
 }
 
 var CatalogItem_ = struct {
-	ID string
-	TenantID string
-	SKU string
+	Id string
+	TenantId string
+	Sku string
 	Name string
 	Description string
 	Category string
@@ -87,9 +85,9 @@ var CatalogItem_ = struct {
 	IsActive string
 	UpdatedAt string
 }{
-	ID: "id",
-	TenantID: "tenant_id",
-	SKU: "sku",
+	Id: "id",
+	TenantId: "tenant_id",
+	Sku: "sku",
 	Name: "name",
 	Description: "description",
 	Category: "category",
@@ -111,240 +109,228 @@ func ReadOneCatalogItem(qb *orm.QB, model *CatalogItem) (*CatalogItem, error) {
 func ReadAllCatalogItem(qb *orm.QB) (CatalogItemList, error) {
 	var results CatalogItemList
 	err := qb.ReadAll(
-		func() fmt.Model { return &CatalogItem{} },
-		func(m fmt.Model) { results = append(results, m.(*CatalogItem)) },
+		func() model.Model { return &CatalogItem{} },
+		func(m model.Model) { results = append(results, m.(*CatalogItem)) },
 	)
 	return results, err
 }
 
-func (m *ItemFilter) ModelName() string {
-	return "item_filter"
+type ItemFilter struct {
+	Type string
+	ActiveOnly bool
+	Limit int64
+	Offset int64
 }
 
-var _schemaItemFilter = []fmt.Field{
-		{Name: "type", Type: fmt.FieldText},
-		{Name: "active_only", Type: fmt.FieldBool},
-		{Name: "limit", Type: fmt.FieldInt},
-		{Name: "offset", Type: fmt.FieldInt},
-	}
+func (m *ItemFilter) ModelName() string { return "item_filter" }
 
-func (m *ItemFilter) Schema() []fmt.Field { return _schemaItemFilter }
+func (m *ItemFilter) Schema() []model.Field { return ItemFilterModel.Fields }
 
 func (m *ItemFilter) Pointers() []any { return []any{&m.Type, &m.ActiveOnly, &m.Limit, &m.Offset} }
 
 func (m *ItemFilter) IsNil() bool { return m == nil }
 
-func (m *ItemFilter) EncodeFields(w fmt.FieldWriter) {
+func (m *ItemFilter) EncodeFields(w model.FieldWriter) {
 	w.String("type", m.Type)
 	w.Bool("active_only", m.ActiveOnly)
-	w.Int("limit", int64(m.Limit))
-	w.Int("offset", int64(m.Offset))
+	w.Int("limit", m.Limit)
+	w.Int("offset", m.Offset)
 }
 
-func (m *ItemFilter) DecodeFields(r fmt.FieldReader) {
+func (m *ItemFilter) DecodeFields(r model.FieldReader) {
 	if v, ok := r.String("type"); ok { m.Type = v }
 	if v, ok := r.Bool("active_only"); ok { m.ActiveOnly = v }
-	if v, ok := r.Int("limit"); ok { m.Limit = int(v) }
-	if v, ok := r.Int("offset"); ok { m.Offset = int(v) }
+	if v, ok := r.Int("limit"); ok { m.Limit = v }
+	if v, ok := r.Int("offset"); ok { m.Offset = v }
 }
 
 type ItemFilterList []*ItemFilter
 
-func (s *ItemFilterList) Schema() []fmt.Field { return nil }
+func (s *ItemFilterList) Schema() []model.Field { return nil }
 func (s *ItemFilterList) Pointers() []any     { return nil }
 func (s *ItemFilterList) Len() int             { return len(*s) }
-func (s *ItemFilterList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *ItemFilterList) Append() fmt.Fielder  { v := &ItemFilter{}; *s = append(*s, v); return v }
+func (s *ItemFilterList) At(i int) model.Fielder { return (*s)[i] }
+func (s *ItemFilterList) Append() model.Fielder  { v := &ItemFilter{}; *s = append(*s, v); return v }
 func (s *ItemFilterList) IsNil() bool          { return s == nil }
-func (s *ItemFilterList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *ItemFilterList) DecodeFields(_ fmt.FieldReader) {}
+func (s *ItemFilterList) EncodeFields(_ model.FieldWriter) {}
+func (s *ItemFilterList) DecodeFields(_ model.FieldReader) {}
 
-func (m *ListItemsArgs) ModelName() string {
-	return "list_items_args"
+type ListItemsArgs struct {
+	TenantId string
+	Type string
+	ActiveOnly bool
+	Limit int64
+	Offset int64
 }
 
-var _schemaListItemsArgs = []fmt.Field{
-		{Name: "tenant_id", Type: fmt.FieldText},
-		{Name: "type", Type: fmt.FieldText},
-		{Name: "active_only", Type: fmt.FieldBool},
-		{Name: "limit", Type: fmt.FieldInt},
-		{Name: "offset", Type: fmt.FieldInt},
-	}
+func (m *ListItemsArgs) ModelName() string { return "list_items_args" }
 
-func (m *ListItemsArgs) Schema() []fmt.Field { return _schemaListItemsArgs }
+func (m *ListItemsArgs) Schema() []model.Field { return ListItemsArgsModel.Fields }
 
-func (m *ListItemsArgs) Pointers() []any { return []any{&m.TenantID, &m.Type, &m.ActiveOnly, &m.Limit, &m.Offset} }
+func (m *ListItemsArgs) Pointers() []any { return []any{&m.TenantId, &m.Type, &m.ActiveOnly, &m.Limit, &m.Offset} }
 
 func (m *ListItemsArgs) IsNil() bool { return m == nil }
 
-func (m *ListItemsArgs) EncodeFields(w fmt.FieldWriter) {
-	w.String("tenant_id", m.TenantID)
+func (m *ListItemsArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
 	w.String("type", m.Type)
 	w.Bool("active_only", m.ActiveOnly)
-	w.Int("limit", int64(m.Limit))
-	w.Int("offset", int64(m.Offset))
+	w.Int("limit", m.Limit)
+	w.Int("offset", m.Offset)
 }
 
-func (m *ListItemsArgs) DecodeFields(r fmt.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantID = v }
+func (m *ListItemsArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
 	if v, ok := r.String("type"); ok { m.Type = v }
 	if v, ok := r.Bool("active_only"); ok { m.ActiveOnly = v }
-	if v, ok := r.Int("limit"); ok { m.Limit = int(v) }
-	if v, ok := r.Int("offset"); ok { m.Offset = int(v) }
+	if v, ok := r.Int("limit"); ok { m.Limit = v }
+	if v, ok := r.Int("offset"); ok { m.Offset = v }
 }
 
 type ListItemsArgsList []*ListItemsArgs
 
-func (s *ListItemsArgsList) Schema() []fmt.Field { return nil }
+func (s *ListItemsArgsList) Schema() []model.Field { return nil }
 func (s *ListItemsArgsList) Pointers() []any     { return nil }
 func (s *ListItemsArgsList) Len() int             { return len(*s) }
-func (s *ListItemsArgsList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *ListItemsArgsList) Append() fmt.Fielder  { v := &ListItemsArgs{}; *s = append(*s, v); return v }
+func (s *ListItemsArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *ListItemsArgsList) Append() model.Fielder  { v := &ListItemsArgs{}; *s = append(*s, v); return v }
 func (s *ListItemsArgsList) IsNil() bool          { return s == nil }
-func (s *ListItemsArgsList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *ListItemsArgsList) DecodeFields(_ fmt.FieldReader) {}
+func (s *ListItemsArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *ListItemsArgsList) DecodeFields(_ model.FieldReader) {}
 
-func (m *GetItemArgs) ModelName() string {
-	return "get_item_args"
+type GetItemArgs struct {
+	TenantId string
+	Id string
 }
 
-var _schemaGetItemArgs = []fmt.Field{
-		{Name: "tenant_id", Type: fmt.FieldText},
-		{Name: "id", Type: fmt.FieldText},
-	}
+func (m *GetItemArgs) ModelName() string { return "get_item_args" }
 
-func (m *GetItemArgs) Schema() []fmt.Field { return _schemaGetItemArgs }
+func (m *GetItemArgs) Schema() []model.Field { return GetItemArgsModel.Fields }
 
-func (m *GetItemArgs) Pointers() []any { return []any{&m.TenantID, &m.ID} }
+func (m *GetItemArgs) Pointers() []any { return []any{&m.TenantId, &m.Id} }
 
 func (m *GetItemArgs) IsNil() bool { return m == nil }
 
-func (m *GetItemArgs) EncodeFields(w fmt.FieldWriter) {
-	w.String("tenant_id", m.TenantID)
-	w.String("id", m.ID)
+func (m *GetItemArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("id", m.Id)
 }
 
-func (m *GetItemArgs) DecodeFields(r fmt.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantID = v }
-	if v, ok := r.String("id"); ok { m.ID = v }
+func (m *GetItemArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("id"); ok { m.Id = v }
 }
 
 type GetItemArgsList []*GetItemArgs
 
-func (s *GetItemArgsList) Schema() []fmt.Field { return nil }
+func (s *GetItemArgsList) Schema() []model.Field { return nil }
 func (s *GetItemArgsList) Pointers() []any     { return nil }
 func (s *GetItemArgsList) Len() int             { return len(*s) }
-func (s *GetItemArgsList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *GetItemArgsList) Append() fmt.Fielder  { v := &GetItemArgs{}; *s = append(*s, v); return v }
+func (s *GetItemArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *GetItemArgsList) Append() model.Fielder  { v := &GetItemArgs{}; *s = append(*s, v); return v }
 func (s *GetItemArgsList) IsNil() bool          { return s == nil }
-func (s *GetItemArgsList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *GetItemArgsList) DecodeFields(_ fmt.FieldReader) {}
+func (s *GetItemArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *GetItemArgsList) DecodeFields(_ model.FieldReader) {}
 
-func (m *FindBySKUArgs) ModelName() string {
-	return "find_by_skuargs"
+type FindBySKUArgs struct {
+	TenantId string
+	Sku string
 }
 
-var _schemaFindBySKUArgs = []fmt.Field{
-		{Name: "tenant_id", Type: fmt.FieldText},
-		{Name: "sku", Type: fmt.FieldText},
-	}
+func (m *FindBySKUArgs) ModelName() string { return "find_by_sku_args" }
 
-func (m *FindBySKUArgs) Schema() []fmt.Field { return _schemaFindBySKUArgs }
+func (m *FindBySKUArgs) Schema() []model.Field { return FindBySKUArgsModel.Fields }
 
-func (m *FindBySKUArgs) Pointers() []any { return []any{&m.TenantID, &m.SKU} }
+func (m *FindBySKUArgs) Pointers() []any { return []any{&m.TenantId, &m.Sku} }
 
 func (m *FindBySKUArgs) IsNil() bool { return m == nil }
 
-func (m *FindBySKUArgs) EncodeFields(w fmt.FieldWriter) {
-	w.String("tenant_id", m.TenantID)
-	w.String("sku", m.SKU)
+func (m *FindBySKUArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("sku", m.Sku)
 }
 
-func (m *FindBySKUArgs) DecodeFields(r fmt.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantID = v }
-	if v, ok := r.String("sku"); ok { m.SKU = v }
+func (m *FindBySKUArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("sku"); ok { m.Sku = v }
 }
 
 type FindBySKUArgsList []*FindBySKUArgs
 
-func (s *FindBySKUArgsList) Schema() []fmt.Field { return nil }
+func (s *FindBySKUArgsList) Schema() []model.Field { return nil }
 func (s *FindBySKUArgsList) Pointers() []any     { return nil }
 func (s *FindBySKUArgsList) Len() int             { return len(*s) }
-func (s *FindBySKUArgsList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *FindBySKUArgsList) Append() fmt.Fielder  { v := &FindBySKUArgs{}; *s = append(*s, v); return v }
+func (s *FindBySKUArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *FindBySKUArgsList) Append() model.Fielder  { v := &FindBySKUArgs{}; *s = append(*s, v); return v }
 func (s *FindBySKUArgsList) IsNil() bool          { return s == nil }
-func (s *FindBySKUArgsList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *FindBySKUArgsList) DecodeFields(_ fmt.FieldReader) {}
+func (s *FindBySKUArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *FindBySKUArgsList) DecodeFields(_ model.FieldReader) {}
 
-func (m *DeactivateItemArgs) ModelName() string {
-	return "deactivate_item_args"
+type DeactivateItemArgs struct {
+	TenantId string
+	Id string
 }
 
-var _schemaDeactivateItemArgs = []fmt.Field{
-		{Name: "tenant_id", Type: fmt.FieldText},
-		{Name: "id", Type: fmt.FieldText},
-	}
+func (m *DeactivateItemArgs) ModelName() string { return "deactivate_item_args" }
 
-func (m *DeactivateItemArgs) Schema() []fmt.Field { return _schemaDeactivateItemArgs }
+func (m *DeactivateItemArgs) Schema() []model.Field { return DeactivateItemArgsModel.Fields }
 
-func (m *DeactivateItemArgs) Pointers() []any { return []any{&m.TenantID, &m.ID} }
+func (m *DeactivateItemArgs) Pointers() []any { return []any{&m.TenantId, &m.Id} }
 
 func (m *DeactivateItemArgs) IsNil() bool { return m == nil }
 
-func (m *DeactivateItemArgs) EncodeFields(w fmt.FieldWriter) {
-	w.String("tenant_id", m.TenantID)
-	w.String("id", m.ID)
+func (m *DeactivateItemArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("id", m.Id)
 }
 
-func (m *DeactivateItemArgs) DecodeFields(r fmt.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantID = v }
-	if v, ok := r.String("id"); ok { m.ID = v }
+func (m *DeactivateItemArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("id"); ok { m.Id = v }
 }
 
 type DeactivateItemArgsList []*DeactivateItemArgs
 
-func (s *DeactivateItemArgsList) Schema() []fmt.Field { return nil }
+func (s *DeactivateItemArgsList) Schema() []model.Field { return nil }
 func (s *DeactivateItemArgsList) Pointers() []any     { return nil }
 func (s *DeactivateItemArgsList) Len() int             { return len(*s) }
-func (s *DeactivateItemArgsList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *DeactivateItemArgsList) Append() fmt.Fielder  { v := &DeactivateItemArgs{}; *s = append(*s, v); return v }
+func (s *DeactivateItemArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *DeactivateItemArgsList) Append() model.Fielder  { v := &DeactivateItemArgs{}; *s = append(*s, v); return v }
 func (s *DeactivateItemArgsList) IsNil() bool          { return s == nil }
-func (s *DeactivateItemArgsList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *DeactivateItemArgsList) DecodeFields(_ fmt.FieldReader) {}
+func (s *DeactivateItemArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *DeactivateItemArgsList) DecodeFields(_ model.FieldReader) {}
 
-func (m *DeleteItemArgs) ModelName() string {
-	return "delete_item_args"
+type DeleteItemArgs struct {
+	TenantId string
+	Id string
 }
 
-var _schemaDeleteItemArgs = []fmt.Field{
-		{Name: "tenant_id", Type: fmt.FieldText},
-		{Name: "id", Type: fmt.FieldText},
-	}
+func (m *DeleteItemArgs) ModelName() string { return "delete_item_args" }
 
-func (m *DeleteItemArgs) Schema() []fmt.Field { return _schemaDeleteItemArgs }
+func (m *DeleteItemArgs) Schema() []model.Field { return DeleteItemArgsModel.Fields }
 
-func (m *DeleteItemArgs) Pointers() []any { return []any{&m.TenantID, &m.ID} }
+func (m *DeleteItemArgs) Pointers() []any { return []any{&m.TenantId, &m.Id} }
 
 func (m *DeleteItemArgs) IsNil() bool { return m == nil }
 
-func (m *DeleteItemArgs) EncodeFields(w fmt.FieldWriter) {
-	w.String("tenant_id", m.TenantID)
-	w.String("id", m.ID)
+func (m *DeleteItemArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("id", m.Id)
 }
 
-func (m *DeleteItemArgs) DecodeFields(r fmt.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantID = v }
-	if v, ok := r.String("id"); ok { m.ID = v }
+func (m *DeleteItemArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("id"); ok { m.Id = v }
 }
 
 type DeleteItemArgsList []*DeleteItemArgs
 
-func (s *DeleteItemArgsList) Schema() []fmt.Field { return nil }
+func (s *DeleteItemArgsList) Schema() []model.Field { return nil }
 func (s *DeleteItemArgsList) Pointers() []any     { return nil }
 func (s *DeleteItemArgsList) Len() int             { return len(*s) }
-func (s *DeleteItemArgsList) At(i int) fmt.Fielder { return (*s)[i] }
-func (s *DeleteItemArgsList) Append() fmt.Fielder  { v := &DeleteItemArgs{}; *s = append(*s, v); return v }
+func (s *DeleteItemArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *DeleteItemArgsList) Append() model.Fielder  { v := &DeleteItemArgs{}; *s = append(*s, v); return v }
 func (s *DeleteItemArgsList) IsNil() bool          { return s == nil }
-func (s *DeleteItemArgsList) EncodeFields(_ fmt.FieldWriter) {}
-func (s *DeleteItemArgsList) DecodeFields(_ fmt.FieldReader) {}
+func (s *DeleteItemArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *DeleteItemArgsList) DecodeFields(_ model.FieldReader) {}
 

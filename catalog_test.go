@@ -1,4 +1,4 @@
-package tests
+package itemcatalog
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 	"github.com/tinywasm/context"
 	"github.com/tinywasm/mcp"
 	"github.com/tinywasm/sqlite"
-	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 func TestCatalog(t *testing.T) {
@@ -19,7 +18,7 @@ func TestCatalog(t *testing.T) {
 
 	ui := &MockUI{}
 	pub := &MockPublisher{}
-	module, err := itemcatalog.New(db, itemcatalog.Deps{
+	module, err := New(db, Deps{
 		UI:        ui,
 		Publisher: pub,
 	})
@@ -30,9 +29,9 @@ func TestCatalog(t *testing.T) {
 	tenantID := "tenant-1"
 
 	// Test CreateItem
-	item := itemcatalog.CatalogItem{
-		TenantID: tenantID,
-		SKU:      "SKU123",
+	item := CatalogItem{
+		TenantId: tenantID,
+		Sku:      "SKU123",
 		Name:     "Test Service",
 		Type:     "S",
 		Price:    10.5,
@@ -44,7 +43,7 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create item: %v", err)
 	}
-	if created.ID == "" {
+	if created.Id == "" {
 		t.Error("expected non-empty ID")
 	}
 
@@ -59,21 +58,21 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to find item by SKU: %v", err)
 	}
-	if found.ID != created.ID {
-		t.Errorf("expected ID %s, got %s", created.ID, found.ID)
+	if found.Id != created.Id {
+		t.Errorf("expected ID %s, got %s", created.Id, found.Id)
 	}
 
 	// Test GetItem
-	found, err = module.GetItem(tenantID, created.ID)
+	found, err = module.GetItem(tenantID, created.Id)
 	if err != nil {
 		t.Errorf("failed to get item: %v", err)
 	}
-	if found.SKU != "SKU123" {
-		t.Errorf("expected SKU SKU123, got %s", found.SKU)
+	if found.Sku != "SKU123" {
+		t.Errorf("expected SKU SKU123, got %s", found.Sku)
 	}
 
 	// Test ServiceExists
-	exists, err := module.ServiceExists(tenantID, created.ID)
+	exists, err := module.ServiceExists(tenantID, created.Id)
 	if err != nil || !exists {
 		t.Errorf("expected ServiceExists to be true, got %v, err: %v", exists, err)
 	}
@@ -89,7 +88,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test ListItems
-	items, err := module.ListItems(tenantID, itemcatalog.ItemFilter{})
+	items, err := module.ListItems(tenantID, ItemFilter{})
 	if err != nil {
 		t.Errorf("failed to list items: %v", err)
 	}
@@ -98,17 +97,17 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test DeactivateItem
-	err = module.DeactivateItem(tenantID, created.ID)
+	err = module.DeactivateItem(tenantID, created.Id)
 	if err != nil {
 		t.Errorf("failed to deactivate item: %v", err)
 	}
-	deactivated, _ := module.GetItem(tenantID, created.ID)
+	deactivated, _ := module.GetItem(tenantID, created.Id)
 	if deactivated.IsActive {
 		t.Error("expected item to be inactive")
 	}
 
 	// Test ServiceExists for inactive
-	exists, err = module.ServiceExists(tenantID, created.ID)
+	exists, err = module.ServiceExists(tenantID, created.Id)
 	if err != nil || exists {
 		t.Errorf("expected ServiceExists to be false for inactive, got %v", exists)
 	}
@@ -144,7 +143,7 @@ func TestCatalog(t *testing.T) {
 
 	args, _ := json.Marshal(map[string]string{
 		"tenant_id": tenantID,
-		"id":        created.ID,
+		"id":        created.Id,
 	})
 
 	// Prepare MCP Request using JSON
@@ -177,20 +176,20 @@ func TestCatalog(t *testing.T) {
 	}
 	tc := tcs[0]
 
-	var mcpItem itemcatalog.CatalogItem
+	var mcpItem CatalogItem
 	if err := json.Unmarshal([]byte(tc.Text), &mcpItem); err != nil {
 		t.Fatalf("failed to unmarshal item from MCP text: %v. Text was: %s", err, tc.Text)
 	}
-	if mcpItem.ID != created.ID {
-		t.Errorf("expected ID %s, got %s", created.ID, mcpItem.ID)
+	if mcpItem.Id != created.Id {
+		t.Errorf("expected ID %s, got %s", created.Id, mcpItem.Id)
 	}
 
 	// Test DeleteItem
-	err = module.DeleteItem(tenantID, created.ID)
+	err = module.DeleteItem(tenantID, created.Id)
 	if err != nil {
 		t.Errorf("failed to delete item: %v", err)
 	}
-	_, err = module.GetItem(tenantID, created.ID)
+	_, err = module.GetItem(tenantID, created.Id)
 	if err == nil {
 		t.Error("expected error getting deleted item")
 	}
