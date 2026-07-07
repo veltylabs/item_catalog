@@ -3,7 +3,7 @@ package tests
 import (
 	"fmt"
 
-	itemcatalog "github.com/veltylabs/item-catalog"
+	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 type MockUI struct {

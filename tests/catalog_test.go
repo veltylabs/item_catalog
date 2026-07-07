@@ -7,7 +7,7 @@ import (
 	"github.com/tinywasm/context"
 	"github.com/tinywasm/mcp"
 	"github.com/tinywasm/sqlite"
-	itemcatalog "github.com/veltylabs/item-catalog"
+	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 func TestCatalog(t *testing.T) {
@@ -165,13 +165,17 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// The Content is a JSON string of textContent if it was created via mcp.Text
-	var tc struct {
+	var tcs []struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	}
-	if err := json.Unmarshal([]byte(mcpRes.Content), &tc); err != nil {
+	if err := json.Unmarshal([]byte(mcpRes.Content), &tcs); err != nil {
 		t.Fatalf("failed to unmarshal MCP result content: %v. Content was: %s", err, mcpRes.Content)
 	}
+	if len(tcs) == 0 {
+		t.Fatalf("MCP result content is empty. Content was: %s", mcpRes.Content)
+	}
+	tc := tcs[0]
 
 	var mcpItem itemcatalog.CatalogItem
 	if err := json.Unmarshal([]byte(tc.Text), &mcpItem); err != nil {

@@ -1,20 +1,17 @@
-//go:build !wasm
-
 package itemcatalog
 
 import (
-	"encoding/json"
-	"errors"
-	"time"
-
 	"github.com/tinywasm/context"
+	"github.com/tinywasm/fmt"
+	"github.com/tinywasm/json"
 	"github.com/tinywasm/mcp"
 	"github.com/tinywasm/orm"
+	"github.com/tinywasm/time"
 	"github.com/tinywasm/unixid"
 )
 
-var ErrNotFound = errors.New("item not found")
-var ErrAlreadyExists = errors.New("item already exists")
+var ErrNotFound = fmt.Err("item not found")
+var ErrAlreadyExists = fmt.Err("item already exists")
 
 type Deps struct {
 	UI        UIAdapter      // optional — nil disables UI methods
@@ -46,7 +43,7 @@ func (m *Module) GetItem(tenantID, id string) (CatalogItem, error) {
 	qb := m.db.Query(&item).Where(CatalogItem_.ID).Eq(id).Where(CatalogItem_.TenantID).Eq(tenantID)
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
-		if errors.Is(err, orm.ErrNotFound) {
+		if err == orm.ErrNotFound {
 			return CatalogItem{}, ErrNotFound
 		}
 		return CatalogItem{}, err
@@ -59,7 +56,7 @@ func (m *Module) FindBySKU(tenantID, sku string) (CatalogItem, error) {
 	qb := m.db.Query(&item).Where(CatalogItem_.SKU).Eq(sku).Where(CatalogItem_.TenantID).Eq(tenantID)
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
-		if errors.Is(err, orm.ErrNotFound) {
+		if err == orm.ErrNotFound {
 			return CatalogItem{}, ErrNotFound
 		}
 		return CatalogItem{}, err
@@ -101,7 +98,7 @@ func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
 	}
 
 	item.ID = m.uid.GetNewID()
-	item.UpdatedAt = time.Now().Unix()
+	item.UpdatedAt = time.Now()
 	if err := m.db.Create(&item); err != nil {
 		return CatalogItem{}, err
 	}
@@ -116,7 +113,7 @@ func (m *Module) UpdateItem(item CatalogItem) (CatalogItem, error) {
 		return CatalogItem{}, err
 	}
 
-	item.UpdatedAt = time.Now().Unix()
+	item.UpdatedAt = time.Now()
 	if err := m.db.Update(&item, orm.Eq(CatalogItem_.ID, item.ID)); err != nil {
 		return CatalogItem{}, err
 	}
@@ -130,7 +127,7 @@ func (m *Module) DeactivateItem(tenantID, id string) error {
 		return err
 	}
 	item.IsActive = false
-	item.UpdatedAt = time.Now().Unix()
+	item.UpdatedAt = time.Now()
 	if err := m.db.Update(&item, orm.Eq(CatalogItem_.ID, item.ID)); err != nil {
 		return err
 	}
@@ -153,7 +150,7 @@ func (m *Module) DeleteItem(tenantID, id string) error {
 func (m *Module) ServiceExists(tenantID, serviceID string) (bool, error) {
 	item, err := m.GetItem(tenantID, serviceID)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if err == ErrNotFound {
 			return false, nil
 		}
 		return false, err
@@ -252,85 +249,94 @@ func (m *Module) Tools() []mcp.Tool {
 }
 
 func (m *Module) mcpListItems(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args struct {
-		TenantID string `json:"tenant_id"`
-		ItemFilter
-	}
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &args); err != nil {
+	var args ListItemsArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
-	items, err := m.ListItems(args.TenantID, args.ItemFilter)
+	filter := ItemFilter{Type: args.Type, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
+	items, err := m.ListItems(args.TenantID, filter)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
-	res, _ := json.Marshal(items)
-	return mcp.Text(string(res)), nil
+	// Convert []CatalogItem to CatalogItemList for JSON encoding
+	itemList := make(CatalogItemList, len(items))
+	for i := range items {
+		itemList[i] = &items[i]
+	}
+	var res string
+	if err := json.Encode(&itemList, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
 }
 
 func (m *Module) mcpGetItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args struct {
-		TenantID string `json:"tenant_id"`
-		ID       string `json:"id"`
-	}
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &args); err != nil {
+	var args GetItemArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
 	item, err := m.GetItem(args.TenantID, args.ID)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
-	res, _ := json.Marshal(item)
-	return mcp.Text(string(res)), nil
+	var res string
+	if err := json.Encode(&item, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
 }
 
 func (m *Module) mcpFindBySKU(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args struct {
-		TenantID string `json:"tenant_id"`
-		SKU      string `json:"sku"`
-	}
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &args); err != nil {
+	var args FindBySKUArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
 	item, err := m.FindBySKU(args.TenantID, args.SKU)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
-	res, _ := json.Marshal(item)
-	return mcp.Text(string(res)), nil
+	var res string
+	if err := json.Encode(&item, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
 }
 
 func (m *Module) mcpCreateItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
 	var item CatalogItem
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &item); err != nil {
+	if err := json.Decode(req.Params.Arguments, &item); err != nil {
 		return nil, err
 	}
 	created, err := m.CreateItem(item)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
-	res, _ := json.Marshal(created)
-	return mcp.Text(string(res)), nil
+	var res string
+	if err := json.Encode(&created, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
 }
 
 func (m *Module) mcpUpdateItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
 	var item CatalogItem
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &item); err != nil {
+	if err := json.Decode(req.Params.Arguments, &item); err != nil {
 		return nil, err
 	}
 	updated, err := m.UpdateItem(item)
 	if err != nil {
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
-	res, _ := json.Marshal(updated)
-	return mcp.Text(string(res)), nil
+	var res string
+	if err := json.Encode(&updated, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
 }
 
 func (m *Module) mcpDeactivateItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args struct {
-		TenantID string `json:"tenant_id"`
-		ID       string `json:"id"`
-	}
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &args); err != nil {
+	var args DeactivateItemArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
 	if err := m.DeactivateItem(args.TenantID, args.ID); err != nil {
@@ -340,11 +346,8 @@ func (m *Module) mcpDeactivateItem(ctx *context.Context, req mcp.Request) (*mcp.
 }
 
 func (m *Module) mcpDeleteItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args struct {
-		TenantID string `json:"tenant_id"`
-		ID       string `json:"id"`
-	}
-	if err := json.Unmarshal([]byte(req.Params.Arguments), &args); err != nil {
+	var args DeleteItemArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
 		return nil, err
 	}
 	if err := m.DeleteItem(args.TenantID, args.ID); err != nil {
