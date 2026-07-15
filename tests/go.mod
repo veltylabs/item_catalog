@@ -28,4 +28,3 @@ require (
 	modernc.org/sqlite v1.46.1 // indirect
 )
 
-replace github.com/veltylabs/item_catalog => ..
