@@ -14,4 +14,17 @@ erDiagram
         bool is_active
         int updated_at
     }
+
+    catalog_agreement {
+        string id PK
+        string tenant_id
+        string catalog_item_id FK
+        string insurer
+        string code
+        float price
+        bool is_active
+        int updated_at
+    }
+
+    catalog_item ||--o{ catalog_agreement : "has multiple"
 ```

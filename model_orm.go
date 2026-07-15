@@ -115,6 +115,99 @@ func ReadAllCatalogItem(qb *orm.QB) (CatalogItemList, error) {
 	return results, err
 }
 
+type Agreement struct {
+	Id string
+	TenantId string
+	CatalogItemId string
+	Insurer string
+	Code string
+	Price float64
+	IsActive bool
+	UpdatedAt int64
+}
+
+func (m *Agreement) ModelName() string { return "catalog_agreement" }
+
+func (m *Agreement) Schema() []model.Field { return AgreementModel.Fields }
+
+func (m *Agreement) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.CatalogItemId, &m.Insurer, &m.Code, &m.Price, &m.IsActive, &m.UpdatedAt} }
+
+func (m *Agreement) IsNil() bool { return m == nil }
+
+func (m *Agreement) EncodeFields(w model.FieldWriter) {
+	w.String("id", m.Id)
+	w.String("tenant_id", m.TenantId)
+	w.String("catalog_item_id", m.CatalogItemId)
+	w.String("insurer", m.Insurer)
+	w.String("code", m.Code)
+	w.Float("price", m.Price)
+	w.Bool("is_active", m.IsActive)
+	w.Int("updated_at", m.UpdatedAt)
+}
+
+func (m *Agreement) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("catalog_item_id"); ok { m.CatalogItemId = v }
+	if v, ok := r.String("insurer"); ok { m.Insurer = v }
+	if v, ok := r.String("code"); ok { m.Code = v }
+	if v, ok := r.Float("price"); ok { m.Price = v }
+	if v, ok := r.Bool("is_active"); ok { m.IsActive = v }
+	if v, ok := r.Int("updated_at"); ok { m.UpdatedAt = v }
+}
+
+type AgreementList []*Agreement
+
+func (s *AgreementList) Schema() []model.Field { return nil }
+func (s *AgreementList) Pointers() []any     { return nil }
+func (s *AgreementList) Len() int             { return len(*s) }
+func (s *AgreementList) At(i int) model.Fielder { return (*s)[i] }
+func (s *AgreementList) Append() model.Fielder  { v := &Agreement{}; *s = append(*s, v); return v }
+func (s *AgreementList) IsNil() bool          { return s == nil }
+func (s *AgreementList) EncodeFields(_ model.FieldWriter) {}
+func (s *AgreementList) DecodeFields(_ model.FieldReader) {}
+
+func (m *Agreement) Validate(action byte) error {
+	return model.ValidateFields(action, m)
+}
+
+var Agreement_ = struct {
+	Id string
+	TenantId string
+	CatalogItemId string
+	Insurer string
+	Code string
+	Price string
+	IsActive string
+	UpdatedAt string
+}{
+	Id: "id",
+	TenantId: "tenant_id",
+	CatalogItemId: "catalog_item_id",
+	Insurer: "insurer",
+	Code: "code",
+	Price: "price",
+	IsActive: "is_active",
+	UpdatedAt: "updated_at",
+}
+
+func ReadOneAgreement(qb *orm.QB, model *Agreement) (*Agreement, error) {
+	err := qb.ReadOne()
+	if err != nil {
+		return nil, err
+	}
+	return model, nil
+}
+
+func ReadAllAgreement(qb *orm.QB) (AgreementList, error) {
+	var results AgreementList
+	err := qb.ReadAll(
+		func() model.Model { return &Agreement{} },
+		func(m model.Model) { results = append(results, m.(*Agreement)) },
+	)
+	return results, err
+}
+
 type ItemFilter struct {
 	Type string
 	ActiveOnly bool
@@ -334,3 +427,70 @@ func (s *DeleteItemArgsList) IsNil() bool          { return s == nil }
 func (s *DeleteItemArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *DeleteItemArgsList) DecodeFields(_ model.FieldReader) {}
 
+type ListAgreementsArgs struct {
+	TenantId string
+	CatalogItemId string
+}
+
+func (m *ListAgreementsArgs) ModelName() string { return "list_agreements_args" }
+
+func (m *ListAgreementsArgs) Schema() []model.Field { return ListAgreementsArgsModel.Fields }
+
+func (m *ListAgreementsArgs) Pointers() []any { return []any{&m.TenantId, &m.CatalogItemId} }
+
+func (m *ListAgreementsArgs) IsNil() bool { return m == nil }
+
+func (m *ListAgreementsArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("catalog_item_id", m.CatalogItemId)
+}
+
+func (m *ListAgreementsArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("catalog_item_id"); ok { m.CatalogItemId = v }
+}
+
+type ListAgreementsArgsList []*ListAgreementsArgs
+
+func (s *ListAgreementsArgsList) Schema() []model.Field { return nil }
+func (s *ListAgreementsArgsList) Pointers() []any     { return nil }
+func (s *ListAgreementsArgsList) Len() int             { return len(*s) }
+func (s *ListAgreementsArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *ListAgreementsArgsList) Append() model.Fielder  { v := &ListAgreementsArgs{}; *s = append(*s, v); return v }
+func (s *ListAgreementsArgsList) IsNil() bool          { return s == nil }
+func (s *ListAgreementsArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *ListAgreementsArgsList) DecodeFields(_ model.FieldReader) {}
+
+type DeleteAgreementArgs struct {
+	TenantId string
+	Id string
+}
+
+func (m *DeleteAgreementArgs) ModelName() string { return "delete_agreement_args" }
+
+func (m *DeleteAgreementArgs) Schema() []model.Field { return DeleteAgreementArgsModel.Fields }
+
+func (m *DeleteAgreementArgs) Pointers() []any { return []any{&m.TenantId, &m.Id} }
+
+func (m *DeleteAgreementArgs) IsNil() bool { return m == nil }
+
+func (m *DeleteAgreementArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("id", m.Id)
+}
+
+func (m *DeleteAgreementArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("id"); ok { m.Id = v }
+}
+
+type DeleteAgreementArgsList []*DeleteAgreementArgs
+
+func (s *DeleteAgreementArgsList) Schema() []model.Field { return nil }
+func (s *DeleteAgreementArgsList) Pointers() []any     { return nil }
+func (s *DeleteAgreementArgsList) Len() int             { return len(*s) }
+func (s *DeleteAgreementArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *DeleteAgreementArgsList) Append() model.Fielder  { v := &DeleteAgreementArgs{}; *s = append(*s, v); return v }
+func (s *DeleteAgreementArgsList) IsNil() bool          { return s == nil }
+func (s *DeleteAgreementArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *DeleteAgreementArgsList) DecodeFields(_ model.FieldReader) {}

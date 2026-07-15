@@ -1,3 +1,5 @@
+//go:build !wasm
+
 package itemcatalog
 
 import (
@@ -5,6 +7,7 @@ import (
 	"github.com/tinywasm/fmt"
 	"github.com/tinywasm/json"
 	"github.com/tinywasm/mcp"
+	"github.com/tinywasm/model"
 	"github.com/tinywasm/orm"
 	"github.com/tinywasm/time"
 	"github.com/tinywasm/unixid"
@@ -12,6 +15,21 @@ import (
 
 var ErrNotFound = fmt.Err("item not found")
 var ErrAlreadyExists = fmt.Err("item already exists")
+
+const (
+	OpListItems      = "list_catalog_items"
+	OpGetItem        = "get_catalog_item"
+	OpFindItemBySKU  = "find_item_by_sku"
+	OpCreateItem     = "create_catalog_item"
+	OpUpdateItem     = "update_catalog_item"
+	OpUpsertItem     = "upsert_catalog_item"
+	OpDeactivateItem = "deactivate_catalog_item"
+	OpDeleteItem     = "delete_catalog_item"
+
+	OpListAgreements  = "list_agreements"
+	OpUpsertAgreement = "upsert_agreement"
+	OpDeleteAgreement = "delete_agreement"
+)
 
 type Deps struct {
 	UI        UIAdapter      // optional — nil disables UI methods
@@ -27,6 +45,9 @@ type Module struct {
 
 func New(db *orm.DB, deps Deps) (*Module, error) {
 	if err := db.CreateTable(&CatalogItem{}); err != nil {
+		return nil, err
+	}
+	if err := db.CreateTable(&Agreement{}); err != nil {
 		return nil, err
 	}
 	u, err := unixid.NewUnixID()
@@ -158,6 +179,49 @@ func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
 	return item.Type == "S" && item.IsActive, nil
 }
 
+func (m *Module) ListAgreements(tenantId, catalogItemId string) ([]Agreement, error) {
+	var a Agreement
+	qb := m.db.Query(&a).Where(Agreement_.TenantId).Eq(tenantId)
+	if catalogItemId != "" {
+		qb = qb.Where(Agreement_.CatalogItemId).Eq(catalogItemId)
+	}
+	results, err := ReadAllAgreement(qb)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]Agreement, len(results))
+	for i, r := range results {
+		items[i] = *r
+	}
+	return items, nil
+}
+
+func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
+	a.UpdatedAt = time.Now()
+	if a.Id == "" {
+		a.Id = m.uid.GetNewID()
+		if err := m.db.Create(&a); err != nil {
+			return Agreement{}, err
+		}
+		m.publish("catalog.agreement.created", a)
+		return a, nil
+	}
+	if err := m.db.Update(&a, orm.Eq(Agreement_.Id, a.Id)); err != nil {
+		return Agreement{}, err
+	}
+	m.publish("catalog.agreement.updated", a)
+	return a, nil
+}
+
+func (m *Module) DeleteAgreement(tenantId, id string) error {
+	a := Agreement{Id: id, TenantId: tenantId}
+	if err := m.db.Delete(&a, orm.Eq(Agreement_.Id, id)); err != nil {
+		return err
+	}
+	m.publish("catalog.agreement.deleted", map[string]string{"tenant_id": tenantId, "id": id})
+	return nil
+}
+
 func (m *Module) publish(event string, payload any) {
 	if m.pub != nil {
 		_ = m.pub.Publish(event, payload) // fire-and-forget
@@ -197,53 +261,92 @@ func (m *Module) RenderFilter(current string) string {
 func (m *Module) Tools() []mcp.Tool {
 	return []mcp.Tool{
 		{
-			Name:        "list_catalog_items",
+			Name:        OpListItems,
 			Description: "List catalog items for a tenant",
+			Args:        &ListItemsArgs{},
 			Resource:    "catalog_item",
-			Action:      'r',
+			Action:      model.Read,
 			Execute:     m.mcpListItems,
 		},
 		{
-			Name:        "get_catalog_item",
+			Name:        OpGetItem,
 			Description: "Get a catalog item by ID",
+			Args:        &GetItemArgs{},
 			Resource:    "catalog_item",
-			Action:      'r',
+			Action:      model.Read,
 			Execute:     m.mcpGetItem,
 		},
 		{
-			Name:        "find_item_by_sku",
+			Name:        OpFindItemBySKU,
 			Description: "Find a catalog item by SKU",
+			Args:        &FindBySKUArgs{},
 			Resource:    "catalog_item",
-			Action:      'r',
+			Action:      model.Read,
 			Execute:     m.mcpFindBySKU,
 		},
 		{
-			Name:        "create_catalog_item",
+			Name:        OpCreateItem,
 			Description: "Create a new catalog item",
+			Args:        &CatalogItem{},
 			Resource:    "catalog_item",
-			Action:      'c',
+			Action:      model.Create,
 			Execute:     m.mcpCreateItem,
 		},
 		{
-			Name:        "update_catalog_item",
+			Name:        OpUpdateItem,
 			Description: "Update an existing catalog item",
+			Args:        &CatalogItem{},
 			Resource:    "catalog_item",
-			Action:      'u',
+			Action:      model.Update,
 			Execute:     m.mcpUpdateItem,
 		},
 		{
-			Name:        "deactivate_catalog_item",
-			Description: "Deactivate (soft-delete) a catalog item",
+			Name:        OpUpsertItem,
+			Description: "Create or update a catalog item (create if id is empty)",
+			Args:        &CatalogItem{},
 			Resource:    "catalog_item",
-			Action:      'u',
+			Action:      model.Create,
+			Execute:     m.mcpUpsertItem,
+		},
+		{
+			Name:        OpDeactivateItem,
+			Description: "Deactivate (soft-delete) a catalog item",
+			Args:        &DeactivateItemArgs{},
+			Resource:    "catalog_item",
+			Action:      model.Update,
 			Execute:     m.mcpDeactivateItem,
 		},
 		{
-			Name:        "delete_catalog_item",
+			Name:        OpDeleteItem,
 			Description: "Hard delete a catalog item",
+			Args:        &DeleteItemArgs{},
 			Resource:    "catalog_item",
-			Action:      'd',
+			Action:      model.Delete,
 			Execute:     m.mcpDeleteItem,
+		},
+		{
+			Name:        OpListAgreements,
+			Description: "List agreements (convenios) of a catalog item",
+			Args:        &ListAgreementsArgs{},
+			Resource:    "catalog_agreement",
+			Action:      model.Read,
+			Execute:     m.mcpListAgreements,
+		},
+		{
+			Name:        OpUpsertAgreement,
+			Description: "Create or update an agreement (create if id is empty)",
+			Args:        &Agreement{},
+			Resource:    "catalog_agreement",
+			Action:      model.Create,
+			Execute:     m.mcpUpsertAgreement,
+		},
+		{
+			Name:        OpDeleteAgreement,
+			Description: "Delete an agreement",
+			Args:        &DeleteAgreementArgs{},
+			Resource:    "catalog_agreement",
+			Action:      model.Delete,
+			Execute:     m.mcpDeleteAgreement,
 		},
 	}
 }
@@ -334,6 +437,28 @@ func (m *Module) mcpUpdateItem(ctx *context.Context, req mcp.Request) (*mcp.Resu
 	return mcp.Text(res), nil
 }
 
+func (m *Module) mcpUpsertItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
+	var item CatalogItem
+	if err := json.Decode(req.Params.Arguments, &item); err != nil {
+		return nil, err
+	}
+	var out CatalogItem
+	var err error
+	if item.Id == "" {
+		out, err = m.CreateItem(item)
+	} else {
+		out, err = m.UpdateItem(item)
+	}
+	if err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	var res string
+	if err := json.Encode(&out, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
+}
+
 func (m *Module) mcpDeactivateItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
 	var args DeactivateItemArgs
 	if err := json.Decode(req.Params.Arguments, &args); err != nil {
@@ -354,4 +479,51 @@ func (m *Module) mcpDeleteItem(ctx *context.Context, req mcp.Request) (*mcp.Resu
 		return &mcp.Result{IsError: true, Content: err.Error()}, nil
 	}
 	return mcp.Text("item deleted"), nil
+}
+
+func (m *Module) mcpListAgreements(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
+	var args ListAgreementsArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
+		return nil, err
+	}
+	items, err := m.ListAgreements(args.TenantId, args.CatalogItemId)
+	if err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	list := make(AgreementList, len(items))
+	for i := range items {
+		list[i] = &items[i]
+	}
+	var res string
+	if err := json.Encode(&list, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
+}
+
+func (m *Module) mcpUpsertAgreement(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
+	var a Agreement
+	if err := json.Decode(req.Params.Arguments, &a); err != nil {
+		return nil, err
+	}
+	out, err := m.UpsertAgreement(a)
+	if err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	var res string
+	if err := json.Encode(&out, &res); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text(res), nil
+}
+
+func (m *Module) mcpDeleteAgreement(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
+	var args DeleteAgreementArgs
+	if err := json.Decode(req.Params.Arguments, &args); err != nil {
+		return nil, err
+	}
+	if err := m.DeleteAgreement(args.TenantId, args.Id); err != nil {
+		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	}
+	return mcp.Text("agreement deleted"), nil
 }
