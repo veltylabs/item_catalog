@@ -1,330 +1,268 @@
 ---
-PLAN: "feat: migrate model.go to Kind API + agreements (ex-fonasa) child model"
-TAG: v0.1.0
+PLAN: "feat: item_catalog joins the reusable-module harness (OpModule, IDGenerator, events.Publisher, view)"
+TAG: v0.2.0
 ---
 
-> This plan is dispatched via the CodeJob workflow. See skill: **agents-workflow**.
+> Este plan se despacha vía el flujo CodeJob. Ver skill: **agents-workflow**.
+> Orquestado por `tinywasm/app-releases/docs/REUSABLE_MODULES_MASTER_PLAN.md` — **Fase C, el piloto**.
 
-# PLAN — item_catalog: API `Kind` de `model` + convenios (agreements)
+# PLAN — `item_catalog`: arnés de módulo reutilizable
 
-Eres un agente **sin contexto previo** y **solo tienes este repositorio** (`item_catalog`). Este
-plan es autocontenido: todo contrato, regla y ejemplo está inline. No inventes diseño: cada decisión
-ya está tomada aquí.
+Autocontenido, en español. Eres un agente **sin contexto previo** y **solo tienes este repo**
+(`veltylabs/item_catalog`). Todo el contrato y el código exacto van inline.
 
-`item_catalog` va a **reemplazar a `service_catalog`** en la app consumidora (esa migración es OTRO
-plan, en el repo de la app — no la hagas aquí). Aquí solo dejamos `item_catalog` listo: (1) migrado a
-la API nueva de `github.com/tinywasm/model`, (2) con el campo `type` (servicio/producto — **ya existe**)
-expuesto en formulario, y (3) con **convenios** (`agreement`) como definición hija con su tabla y su
-CRUD MCP. El código ex-`fonasa_code` de `service_catalog` **no** vuelve como columna del item: ahora un
-item puede tener **varios convenios**, y cada convenio lleva su aseguradora + código + precio.
-
----
+> **Prerequisito:** la API `Kind` de `model` + los 11 `Op*`/tools + el modelo `Agreement` (convenios)
+> **ya están implementados** en este repo (`mcp.go`, `model.go`, `model_orm.go`) — verificado, no lo
+> reconstruyas. Esta fase **no** toca la lógica de negocio (`ListItems`/`CreateItem`/`UpdateItem`/…,
+> `GetAgreement`/`UpsertAgreement`/…): esas quedan intactas. Esta fase reemplaza **solo** cómo el
+> módulo se conecta con el resto del sistema (transporte, id, eventos, UI).
 
 ## 1. Qué cambia y por qué
 
-Dos cosas, independientes pero en el mismo plan:
+`item_catalog` es el **primer módulo** que se prueba end-to-end contra el patrón "acoplado solo a
+contratos": `router` (transporte, vía `Op`), `model` (codec + identidad, vía `IDGenerator`), `view`
+(vista), `events` (pub/sub). Hoy:
 
-**(A) Migración de API `model`.** Hoy `model.go` escribe `Type: model.FieldText` — un **literal del
-enum** `FieldType`. La versión nueva (`model@v0.0.14`) cambió `Field.Type` de un enum a la **interfaz
-`Kind`**: se rellena llamando a un **constructor** (`model.Text()`, `model.Int()`, …) o a un **widget**
-(`input.Text()`, `input.Decimal()`, …). Es mecánico: mismos nombres de columna/tabla, mismo JSON.
-Además el campo que el app renderiza como formulario **debe** llevar `input.X()` (un `Kind` con UI);
-si se deja en `model.Text()` (Kind base, sin widget) el formulario sale **vacío en silencio** — el
-mismo bug que ya se detectó y corrigió en `service_catalog`.
+- `mcp.go` importa `tinywasm/mcp` directamente e implementa `Tools() []mcp.Tool`.
+- `New()` construye su propio `unixid.NewUnixID()` internamente — el módulo decide su propio
+  generador de IDs, en vez de recibirlo.
+- `Deps.Publisher EventPublisher` es una interfaz **local** (`model.go:65`) con
+  `Publish(event string, payload any) error` — `payload any` es exactamente el hueco que el arnés
+  prohíbe, y esta forma **no coincide** con la de otros módulos del ecosistema (`clinical_encounter`,
+  `appointment_booking`), que redeclaran la suya propia con otra firma.
+- `Deps.UI UIAdapter` (`model.go:57`) es una abstracción de presentación basada en strings
+  (`RenderItemList(items, filter) string`), anterior a `tinywasm/view`.
 
-**(B) Convenios (`agreement`).** Nueva `model.Definition` hija con **FK escalar** al item
-(`catalog_item_id`), su tabla, sus métodos de servicio y sus tools MCP (list / upsert / delete). Un
-item tiene N convenios; cada convenio lleva `insurer` (aseguradora: FONASA, Isapre X), `code` (el
-ex-`fonasa_code`), `price` (tarifa propia del convenio) e `is_active`.
+Los cuatro son exactamente lo que esta fase elimina, reemplazándolos por contratos ya publicados en
+`tinywasm/model`, `tinywasm/router`, `tinywasm/events`, `tinywasm/view`.
 
-También se migra `mcp.go`: `Tool.Action` pasó de `byte` (`'r'`) a `model.Action` (`model.Read`), y se
-exportan **constantes de nombre de op** para que la app las importe (no las repita).
+> **Nota de diseño importante (evita el error de una versión anterior de este plan).** El contrato de
+> transporte que este módulo implementa es `router.OpModule { ModelName(); MountOps(reg
+> router.OpRegistry) }` — **NO** `router.APIModule { MountAPI(r router.Router) }`. `router.Router` es
+> la interfaz HTTP (`Get/Post/Put/Delete/…`); este módulo nunca la ve ni la importa. `OpRegistry` es
+> una interfaz de **un solo método** (`Op(name, h) Route`), el espejo de `router.Caller` del lado de
+> montaje. Si en algún punto escribes `MountAPI(r router.Router)` o `var _ router.APIModule = …`,
+> te equivocaste de contrato — vuelve a `MountOps(reg router.OpRegistry)`.
 
-**Pilares tinywasm (innegociables):** cero `stdlib` en código que compila a WASM (este módulo es
-**backend** y sus *tests* sí pueden usar `encoding/json` — **no** lo "corrijas"); cero strings
-repetidos en lógica (nombres de op = constantes exportadas); cerrado por defecto (el cero de
-`Tool.Access` ya es `AccessGuarded`).
+## 2. Estado actual exacto (verificado, no supuesto)
 
-## 2. Contrato de `github.com/tinywasm/model@v0.0.14` (inline)
+Todo lo relevante vive en **`mcp.go`** (`//go:build !wasm`) y **`model.go`**.
 
-`Field.Type` es la interfaz `Kind`. Se rellena con un constructor, **nunca** asignando un literal
-`model.FieldText`:
+- `model.go:57-67`:
+  ```go
+  type UIAdapter interface {
+      RenderItemList(items []CatalogItem, activeFilter string) string
+      RenderItemForm(item *CatalogItem) string
+      RenderFilterSelector(current string) string
+  }
+  type EventPublisher interface {
+      Publish(event string, payload any) error
+  }
+  ```
+- `mcp.go:34-58`:
+  ```go
+  type Deps struct {
+      UI        UIAdapter
+      Publisher EventPublisher
+  }
+  type Module struct {
+      db  *orm.DB
+      uid *unixid.UnixID
+      ui  UIAdapter
+      pub EventPublisher
+  }
+  func New(db *orm.DB, deps Deps) (*Module, error) {
+      // CreateTable(&CatalogItem{}), CreateTable(&Agreement{})
+      u, err := unixid.NewUnixID() // el módulo CONSTRUYE su propio generador — esto se elimina
+      // …
+      return &Module{db: db, uid: u, ui: deps.UI, pub: deps.Publisher}, nil
+  }
+  ```
+- `mcp.go:210-228` — `RenderList`/`RenderForm`/`RenderFilter` delegan en `m.ui`; `publish(event,
+  payload any)` delega en `m.pub`, con **7 call sites** (`mcp.go:126,141,155,167,206,212,221`):
+  `catalog.item.created/updated/deactivated/deleted`, `catalog.agreement.created/updated/deleted`.
+  Los payloads hoy son: `item CatalogItem` (create/update), `a *Agreement` (agreement create/update),
+  y `map[string]string{"tenant_id":…, "id":…}` (deactivate/delete de ambos) — este último **no**
+  compila contra `events.Event.Payload model.Encodable` (`map` no lo implementa) y se reemplaza.
+- `mcp.go:261-351` — `func (m *Module) Tools() []mcp.Tool` registra **11** tools (constantes en
+  `mcp.go:19-31`): `OpListItems`, `OpGetItem`, `OpFindItemBySKU`, `OpCreateItem`, `OpUpdateItem`,
+  `OpUpsertItem`, `OpDeactivateItem`, `OpDeleteItem`, `OpListAgreements`, `OpUpsertAgreement`,
+  `OpDeleteAgreement`. Cada uno ya tiene `Args model.Fielder` poblado (p.ej. `&ListItemsArgs{}`,
+  `&CatalogItem{}`) — mismo tipo que `router.Route.Accepts(args model.Fielder)`, encaja sin fricción.
+- `mcp.go:354-`(fin del archivo) — 11 funciones `mcpXxx(ctx *context.Context, req mcp.Request)
+  (*mcp.Result, error)`, cada una: `json.Decode(req.Params.Arguments, &args)` (import
+  `tinywasm/json`), llama al método de servicio (`m.ListItems`/`m.CreateItem`/…, sin cambios), y
+  `json.Encode(&out, &res)` → `mcp.Text(res)`. Este plan **reescribe la envoltura**, no la lógica de
+  negocio que llaman.
+- `setup_test.go` (paquete `itemcatalog`, junto al código, no en `tests/`): define `MockUI` (implementa
+  `UIAdapter`) y `MockPublisher` (implementa `EventPublisher`, `Publish(event string, payload any)
+  error`). `catalog_test.go:19-21,211-212` construye `New(db, Deps{UI: ui, Publisher: pub})`. Ambos
+  dobles quedan obsoletos por el cambio de contrato.
+- `tests/go.mod` existe como módulo anidado (`module github.com/veltylabs/item_catalog/tests`, con
+  `replace … => ../`) pero está **vacío** (cero archivos `.go`) — es un scaffold sin usar. Los tests
+  reales de este repo viven en el paquete raíz (`catalog_test.go`, `setup_test.go`, package
+  `itemcatalog`, sin build tag). El test de esta fase sigue esa misma convención.
+- `go.mod` actual: `github.com/tinywasm/router v0.1.10 // indirect`, `github.com/tinywasm/model
+  v0.0.15` (directo), `github.com/tinywasm/mcp v0.1.22` (directo), `github.com/tinywasm/unixid v0.2.23`
+  (directo). Se necesitan: `router` sube a **directo** en `v0.1.14`+ (trae `OpRegistry`/`OpModule`/
+  `Route.Accepts`/`Context.Decode`+`Encode`/`Caller.Call` tipado); `tinywasm/events@v0.0.2`+ (nuevo,
+  directo); `tinywasm/view@v0.1.0`+ (nuevo, directo). `tinywasm/mcp` y `tinywasm/unixid` **se borran**
+  de las dependencias directas (§3.2/§3.4) — quedan fuera del módulo por completo, no solo sin usar.
 
-```go
-package model
+## 3. El cambio exacto
 
-type FieldType int
-const (
-    FieldText FieldType = iota // string
-    FieldInt                   // int64
-    FieldFloat                 // float64
-    FieldBool                  // bool
-    FieldBlob                  // []byte
-    FieldStruct                // struct anidado — Kind = model.Struct(ref)
-    FieldIntSlice
-    FieldStructSlice           // []T anidado — Kind = model.StructSlice(ref)
-    FieldRaw
-)
+### 3.1 `go.mod`
 
-// Kind reemplaza el par (enum Field.Type + Field.Widget). Implementaciones sin estado.
-type Kind interface {
-    Storage() FieldType          // mapeo determinista a Go/DDL
-    Name() string                // "text", "int", "email", ...
-    Validate(value string) error // SIEMPRE presente — fail-closed
-}
-
-// Constructores base — devuelven Kind, NO un literal FieldType:
-func Text() Kind; func Int() Kind; func Float() Kind; func Bool() Kind; func Blob() Kind
-
-type FieldDB struct {
-    PK, Unique, AutoInc bool
-    RefColumn string // columna PK referenciada en la tabla de Ref (vacío = auto-detecta el PK)
-    OnDelete  string // vacío = default del generador (CASCADE)
-}
-
-type Field struct {
-    Name      string
-    Type      Kind        // model.Text(), input.Decimal(), ... — NUNCA un literal FieldType
-    NotNull   bool
-    OmitEmpty bool
-    DB        *FieldDB    // nil = campo sin metadata DB (igual se persiste y viaja)
-    Ref       *Definition // SOLO FK escalar; dispara la FK en DDL. No cambia el tipo Go (sigue escalar)
-    Exclude   bool
-    Permitted             // reglas de validación embebidas (chars/min/max)
-}
-
-type Fields = []Field
-type Definition struct { Name string; Fields Fields }
-
-// RBAC tipado — Tool.Action ahora es model.Action, no byte:
-type Action uint8
-const ( Create Action = 1 << iota; Read; Update; Delete )
+```
+go get github.com/tinywasm/router@v0.1.14
+go get github.com/tinywasm/events@latest
+go get github.com/tinywasm/view@latest
+go mod tidy   # debe DROPEAR tinywasm/mcp y tinywasm/unixid por completo — ver §3.6
 ```
 
-**Mapeo fijo de tipos Go:** `Text()`→`string`, `Int()`→`int64`, `Float()`→`float64`, `Bool()`→`bool`.
+### 3.2 `Deps`/`Module`/`New` — inyecta lo que hoy se construye solo
 
-**Convención de nombre:** la variable debe llamarse `<Struct>Model` (`AgreementModel` → genera
-`type Agreement struct`).
-
-**Widget = un `Kind` con UI** de `github.com/tinywasm/form/input` (`input.Text()`, `input.Decimal()`,
-`input.Checkbox()`, `input.Number()`, `input.Textarea()`). También implementa `Storage()/Name()/
-Validate()`. **Ya no existe `Field.Widget`.**
-
-### FK escalar (patrón probado en `tinywasm/user`)
-
-Un hijo con FK al padre se declara con `Ref` + `FieldDB.RefColumn` en la MISMA `Field` escalar:
+Reemplaza en `mcp.go` (cerca del principio):
 
 ```go
-// en SessionModel (tinywasm/user), FK a UserModel:
-{Name: "user_id", Type: model.Text(), DB: &model.FieldDB{RefColumn: "id"}, Ref: &UserModel},
-```
-
-`ormc` genera un campo escalar `UserId string` **y** la FK en DDL. El tipo Go sigue siendo `string`.
-
-> **Fallback (regla de mecánica riesgosa):** si al regenerar `ormc` **rechaza** `Ref` o no emite la
-> FK, deja el campo como columna escalar simple **sin** `Ref` (`{Name: "catalog_item_id", Type:
-> model.Text(), NotNull: true}`) — la integridad se cuida en la lógica del módulo — y **repórtalo**.
-> No inventes otra mecánica.
-
-## 3. Estado actual (a portar)
-
-`model.go` usa literales de enum (API vieja) — **no** compila contra `model@v0.0.14`:
-
-```go
-{Name: "id", Type: model.FieldText, DB: &model.FieldDB{PK: true}},   // ← model.FieldText ya no es un Kind
-{Name: "price", Type: model.FieldFloat, NotNull: true},
-{Name: "is_active", Type: model.FieldBool, NotNull: true},
-{Name: "updated_at", Type: model.FieldInt, NotNull: true},
-```
-
-`mcp.go` usa `Action: 'r'` (byte) — **no** compila contra `mcp@v0.1.22` (espera `model.Action`):
-
-```go
-{ Name: "list_catalog_items", ..., Action: 'r', Execute: m.mcpListItems },
-```
-
-## 4. Estado objetivo
-
-### 4.1 `model.go` reescrito
-
-Preserva `package itemcatalog`. Importa `github.com/tinywasm/form/input` y `github.com/tinywasm/model`.
-
-**Regla de widgets:** los modelos que el app renderiza como **formulario** (`CatalogItemModel`,
-`AgreementModel`) llevan `input.X()` en cada campo editable. La **FK** `catalog_item_id` lleva
-`model.Text()` + `Ref` (la fija el app desde el item padre, no se teclea). Los **DTO de argumentos**
-(`ItemFilterModel`, `ListItemsArgsModel`, `GetItemArgsModel`, `FindBySKUArgsModel`,
-`DeactivateItemArgsModel`, `DeleteItemArgsModel`, `ListAgreementsArgsModel`, `DeleteAgreementArgsModel`)
-no se renderizan: llevan **Kinds base** `model.Text()`/`model.Bool()`/`model.Int()`.
-
-```go
-package itemcatalog
-
-import (
-	"github.com/tinywasm/form/input"
-	"github.com/tinywasm/model"
-)
-
-// CatalogItem: producto o servicio. `type` == "S" (servicio) / "P" (producto).
-// ⚠️ NO cambies los valores "S"/"P": appointment_booking.ServiceExists depende de type == "S".
-var CatalogItemModel = model.Definition{
-	Name: "catalog_item",
-	Fields: model.Fields{
-		{Name: "id", Type: input.Text(), DB: &model.FieldDB{PK: true}},
-		{Name: "tenant_id", Type: input.Text(), NotNull: true},
-		{Name: "sku", Type: input.Text(), NotNull: true},
-		{Name: "name", Type: input.Text(), NotNull: true},
-		{Name: "description", Type: input.Textarea()},
-		{Name: "category", Type: input.Text()},
-		{Name: "type", Type: input.Text(), NotNull: true}, // "S" servicio / "P" producto
-		{Name: "price", Type: input.Decimal(), NotNull: true},
-		{Name: "currency", Type: input.Text(), NotNull: true},
-		{Name: "is_active", Type: input.Checkbox(), NotNull: true},
-		{Name: "updated_at", Type: input.Number(), NotNull: true},
-	},
+type Deps struct {
+	IDs       model.IDGenerator // requerido — el módulo NUNCA construye un generador
+	Publisher events.Publisher  // opcional — nil desactiva la publicación de eventos
 }
 
-// Agreement (convenio): un item tiene N convenios. Cada uno con su aseguradora, su código
-// (ex-fonasa_code) y su tarifa propia. FK a catalog_item.
-var AgreementModel = model.Definition{
-	Name: "catalog_agreement",
-	Fields: model.Fields{
-		{Name: "id", Type: input.Text(), DB: &model.FieldDB{PK: true}},
-		{Name: "tenant_id", Type: input.Text(), NotNull: true},
-		{Name: "catalog_item_id", Type: model.Text(), NotNull: true, DB: &model.FieldDB{RefColumn: "id"}, Ref: &CatalogItemModel}, // FK — la fija el app
-		{Name: "insurer", Type: input.Text(), NotNull: true}, // aseguradora: "FONASA", "Isapre X"
-		{Name: "code", Type: input.Text()},                   // ex fonasa_code: código de facturación del convenio
-		{Name: "price", Type: input.Decimal()},               // tarifa propia del convenio (opcional)
-		{Name: "is_active", Type: input.Checkbox(), NotNull: true},
-		{Name: "updated_at", Type: input.Number(), NotNull: true},
-	},
+type Module struct {
+	db  *orm.DB
+	ids model.IDGenerator
+	pub events.Publisher
 }
 
-var ItemFilterModel = model.Definition{
-	Name: "item_filter",
-	Fields: model.Fields{
-		{Name: "type", Type: model.Text()},
-		{Name: "active_only", Type: model.Bool()},
-		{Name: "limit", Type: model.Int()},
-		{Name: "offset", Type: model.Int()},
-	},
-}
-
-var ListItemsArgsModel = model.Definition{
-	Name: "list_items_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "type", Type: model.Text()},
-		{Name: "active_only", Type: model.Bool()},
-		{Name: "limit", Type: model.Int()},
-		{Name: "offset", Type: model.Int()},
-	},
-}
-
-var GetItemArgsModel = model.Definition{
-	Name: "get_item_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "id", Type: model.Text()},
-	},
-}
-
-var FindBySKUArgsModel = model.Definition{
-	Name: "find_by_sku_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "sku", Type: model.Text()},
-	},
-}
-
-var DeactivateItemArgsModel = model.Definition{
-	Name: "deactivate_item_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "id", Type: model.Text()},
-	},
-}
-
-var DeleteItemArgsModel = model.Definition{
-	Name: "delete_item_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "id", Type: model.Text()},
-	},
-}
-
-var ListAgreementsArgsModel = model.Definition{
-	Name: "list_agreements_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "catalog_item_id", Type: model.Text()},
-	},
-}
-
-var DeleteAgreementArgsModel = model.Definition{
-	Name: "delete_agreement_args",
-	Fields: model.Fields{
-		{Name: "tenant_id", Type: model.Text()},
-		{Name: "id", Type: model.Text()},
-	},
-}
-```
-
-**Conserva** en `model.go` las interfaces existentes (`UIAdapter`, `EventPublisher`, `CatalogService`)
-tal cual. Añade a `CatalogService` los tres métodos de convenio (§4.3).
-
-### 4.2 `mcp.go` — Action tipado + constantes de op + upsert de item
-
-1. Importa `github.com/tinywasm/model`.
-2. Cambia cada `Action: '<letra>'` por la `model.Action` tipada, según esta tabla **exacta**:
-
-| Tool | Antes | Ahora |
-|---|---|---|
-| `list_catalog_items` | `'r'` | `model.Read` |
-| `get_catalog_item` | `'r'` | `model.Read` |
-| `find_item_by_sku` | `'r'` | `model.Read` |
-| `create_catalog_item` | `'c'` | `model.Create` |
-| `update_catalog_item` | `'u'` | `model.Update` |
-| `deactivate_catalog_item` | `'u'` | `model.Update` |
-| `delete_catalog_item` | `'d'` | `model.Delete` |
-
-3. Añade el bloque de **constantes de nombre de op exportadas** (cero strings repetidos; la app las
-   importará). Reemplaza los literales `"list_catalog_items"` etc. en `Tools()` por estas constantes:
-
-```go
-const (
-	OpListItems      = "list_catalog_items"
-	OpGetItem        = "get_catalog_item"
-	OpFindItemBySKU  = "find_item_by_sku"
-	OpCreateItem     = "create_catalog_item"
-	OpUpdateItem     = "update_catalog_item"
-	OpUpsertItem     = "upsert_catalog_item"
-	OpDeactivateItem = "deactivate_catalog_item"
-	OpDeleteItem     = "delete_catalog_item"
-
-	OpListAgreements  = "list_agreements"
-	OpUpsertAgreement = "upsert_agreement"
-	OpDeleteAgreement = "delete_agreement"
-)
-```
-
-4. Añade el tool **`upsert_catalog_item`** (la app usa UN solo "save": crear-o-actualizar según `Id`).
-   Espeja el patrón de `service_catalog`:
-
-```go
-// en Tools(), un item más en el slice:
-{
-	Name:        OpUpsertItem,
-	Description: "Create or update a catalog item (create if id is empty)",
-	Args:        &CatalogItem{},
-	Resource:    "catalog_item",
-	Action:      model.Create,
-	Execute:     m.mcpUpsertItem,
-},
-
-func (m *Module) mcpUpsertItem(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var item CatalogItem
-	if err := json.Decode(req.Params.Arguments, &item); err != nil {
+func New(db *orm.DB, deps Deps) (*Module, error) {
+	if deps.IDs == nil {
+		return nil, fmt.Err("item_catalog: Deps.IDs is required")
+	}
+	if err := db.CreateTable(&CatalogItem{}); err != nil {
 		return nil, err
+	}
+	if err := db.CreateTable(&Agreement{}); err != nil {
+		return nil, err
+	}
+	return &Module{db: db, ids: deps.IDs, pub: deps.Publisher}, nil
+}
+```
+
+- **Borra** `uid *unixid.UnixID` del struct `Module` y el import `github.com/tinywasm/unixid`.
+- Todo `m.uid.GetNewID()` (`CreateItem` en `mcp.go:113-125`, `UpsertAgreement`) → `m.ids.NewID()`.
+- Añade `"github.com/tinywasm/events"` al import de `mcp.go`.
+
+### 3.3 Eventos tipados — reemplaza `EventPublisher`/`publish`
+
+**Borra por completo** de `model.go`: la interfaz `EventPublisher` (§2). **Borra** de `mcp.go`: `func
+(m *Module) publish(event string, payload any)`.
+
+Añade constantes de topic (junto a los `Op*` existentes en `mcp.go:19-31`):
+
+```go
+const (
+	TopicItemCreated      = "catalog.item.created"
+	TopicItemUpdated      = "catalog.item.updated"
+	TopicItemDeactivated  = "catalog.item.deactivated"
+	TopicItemDeleted      = "catalog.item.deleted"
+	TopicAgreementCreated = "catalog.agreement.created"
+	TopicAgreementUpdated = "catalog.agreement.updated"
+	TopicAgreementDeleted = "catalog.agreement.deleted"
+)
+```
+
+Cada uno de los 7 call sites de `m.publish(...)` pasa a publicar directo, con un `model.Encodable`
+real — **cero `map`** (ya era regla del arnés; aquí además dejaría de compilar:
+`events.Event.Payload` exige `model.Encodable`, un `map` no lo satisface):
+
+```go
+// mcp.go:126 (dentro de CreateItem) — antes: m.publish("catalog.item.created", item)
+if m.pub != nil {
+	m.pub.Publish(events.Event{Topic: TopicItemCreated, Payload: &item})
+}
+```
+
+```go
+// mcp.go:155 (dentro de DeactivateItem) — antes: m.publish("catalog.item.deactivated",
+// map[string]string{"tenant_id": tenantId, "id": id})
+if m.pub != nil {
+	m.pub.Publish(events.Event{Topic: TopicItemDeactivated, Payload: &item}) // item ya está en scope (GetItem lo trajo)
+}
+```
+
+Aplica el mismo patrón a los 5 call sites restantes (`updated`→`&item`, `deleted`→`&item` ya en scope
+tras `GetItem`, `agreement.created/updated`→`a` ya es `*Agreement`, `agreement.deleted`→trae el
+`*Agreement` con `GetAgreement` antes de borrar, igual que `DeleteItem` ya hace `GetItem` antes de
+publicar). **No** inventes un tipo `map`/DTO nuevo solo para el evento de deactivate/delete — el
+propio `CatalogItem`/`Agreement` ya tiene `Id`/`TenantId` poblados en ese punto del código.
+
+### 3.4 `UIAdapter`/`RenderList`/`RenderForm`/`RenderFilter` — se borran, los reemplaza `view.go` (§3.7)
+
+**Borra por completo**: la interfaz `UIAdapter` (`model.go:57-61`), el campo `Deps.UI`, el campo `ui
+UIAdapter` en `Module`, y los métodos `RenderList`/`RenderForm`/`RenderFilter` (`mcp.go:210-228`). Es
+una abstracción de UI basada en strings, previa a `view`, y con `view.New` como único camino de vista
+("una forma de hacer cada cosa") ya no tiene función.
+
+### 3.5 `Tools() []mcp.Tool` → `MountOps(reg router.OpRegistry)`
+
+**Borra** `func (m *Module) Tools() []mcp.Tool` completo (`mcp.go:261-351`) y el import
+`github.com/tinywasm/mcp`. Reemplázalo por `MountOps`, que registra las **11** ops vía `r.Op(...)`
+sobre el `OpRegistry` recibido — **no** un `router.Router`:
+
+```go
+func (m *Module) ModelName() string { return "item_catalog" }
+
+func (m *Module) MountOps(reg router.OpRegistry) {
+	reg.Op(OpListItems, m.opListItems).Requires("catalog_item", model.Read).Accepts(&ListItemsArgs{})
+	reg.Op(OpGetItem, m.opGetItem).Requires("catalog_item", model.Read).Accepts(&GetItemArgs{})
+	reg.Op(OpFindItemBySKU, m.opFindItemBySKU).Requires("catalog_item", model.Read).Accepts(&FindBySKUArgs{})
+	reg.Op(OpCreateItem, m.opCreateItem).Requires("catalog_item", model.Create).Accepts(&CatalogItem{})
+	reg.Op(OpUpdateItem, m.opUpdateItem).Requires("catalog_item", model.Update).Accepts(&CatalogItem{})
+	reg.Op(OpUpsertItem, m.opUpsertItem).Requires("catalog_item", model.Create).Accepts(&CatalogItem{})
+	reg.Op(OpDeactivateItem, m.opDeactivateItem).Requires("catalog_item", model.Update).Accepts(&DeactivateItemArgs{})
+	reg.Op(OpDeleteItem, m.opDeleteItem).Requires("catalog_item", model.Delete).Accepts(&DeleteItemArgs{})
+	reg.Op(OpListAgreements, m.opListAgreements).Requires("catalog_agreement", model.Read).Accepts(&ListAgreementsArgs{})
+	reg.Op(OpUpsertAgreement, m.opUpsertAgreement).Requires("catalog_agreement", model.Create).Accepts(&Agreement{})
+	reg.Op(OpDeleteAgreement, m.opDeleteAgreement).Requires("catalog_agreement", model.Delete).Accepts(&DeleteAgreementArgs{})
+}
+
+var _ router.OpModule = (*Module)(nil)
+```
+
+Cada `mcpXxx(ctx *context.Context, req mcp.Request) (*mcp.Result, error)` se reescribe como
+`opXxx(ctx router.Context)` — firma `router.HandlerFunc`, decode/encode tipados vía `router.Context`,
+**cero `tinywasm/json`, cero `tinywasm/mcp`** en el handler. 3 ejemplos completos (list, upsert, delete
+— el resto sigue la misma forma, tabla abajo):
+
+```go
+func (m *Module) opListItems(ctx router.Context) {
+	var args ListItemsArgs
+	if err := ctx.Decode(&args); err != nil {
+		ctx.WriteStatus(400)
+		return
+	}
+	filter := ItemFilter{Type: args.Type, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
+	items, err := m.ListItems(args.TenantId, filter)
+	if err != nil {
+		ctx.WriteStatus(500)
+		return
+	}
+	list := make(CatalogItemList, len(items))
+	for i := range items {
+		list[i] = &items[i]
+	}
+	if err := ctx.Encode(&list); err != nil {
+		ctx.WriteStatus(500)
+	}
+}
+
+func (m *Module) opUpsertItem(ctx router.Context) {
+	var item CatalogItem
+	if err := ctx.Decode(&item); err != nil {
+		ctx.WriteStatus(400)
+		return
 	}
 	var out CatalogItem
 	var err error
@@ -334,217 +272,240 @@ func (m *Module) mcpUpsertItem(ctx *context.Context, req mcp.Request) (*mcp.Resu
 		out, err = m.UpdateItem(item)
 	}
 	if err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+		ctx.WriteStatus(500)
+		return
 	}
-	var res string
-	if err := json.Encode(&out, &res); err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
+	if err := ctx.Encode(&out); err != nil {
+		ctx.WriteStatus(500)
 	}
-	return mcp.Text(res), nil
+}
+
+func (m *Module) opDeleteItem(ctx router.Context) {
+	var args DeleteItemArgs
+	if err := ctx.Decode(&args); err != nil {
+		ctx.WriteStatus(400)
+		return
+	}
+	if err := m.DeleteItem(args.TenantId, args.Id); err != nil {
+		ctx.WriteStatus(500)
+		return
+	}
+	ctx.WriteStatus(200)
 }
 ```
 
-5. Rellena `Args:` en los tools existentes con su DTO (schema completo para `tools/list`):
-   `list_catalog_items`→`&ListItemsArgs{}`, `get_catalog_item`→`&GetItemArgs{}`,
-   `find_item_by_sku`→`&FindBySKUArgs{}`, `create_catalog_item`/`update_catalog_item`→`&CatalogItem{}`,
-   `deactivate_catalog_item`→`&DeactivateItemArgs{}`, `delete_catalog_item`→`&DeleteItemArgs{}`.
+**Tabla del resto** (mismo patrón: `Decode` el `*ArgsModel`/registro correspondiente, llama al método
+de servicio ya existente sin cambios, `Encode` el resultado o `WriteStatus` según corresponda):
 
-### 4.3 `mcp.go` — convenios: tabla, servicio y tools
-
-En `New()`, crea también la tabla del convenio (después de la del item):
-
-```go
-if err := db.CreateTable(&Agreement{}); err != nil {
-	return nil, err
-}
-```
-
-Métodos de servicio (añádelos al `*Module` y a la interfaz `CatalogService`):
-
-```go
-func (m *Module) ListAgreements(tenantId, catalogItemId string) ([]Agreement, error) {
-	var a Agreement
-	qb := m.db.Query(&a).Where(Agreement_.TenantId).Eq(tenantId)
-	if catalogItemId != "" {
-		qb = qb.Where(Agreement_.CatalogItemId).Eq(catalogItemId)
-	}
-	results, err := ReadAllAgreement(qb)
-	if err != nil {
-		return nil, err
-	}
-	items := make([]Agreement, len(results))
-	for i, r := range results {
-		items[i] = *r
-	}
-	return items, nil
-}
-
-func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
-	a.UpdatedAt = time.Now()
-	if a.Id == "" {
-		a.Id = m.uid.GetNewID()
-		if err := m.db.Create(&a); err != nil {
-			return Agreement{}, err
-		}
-		m.publish("catalog.agreement.created", a)
-		return a, nil
-	}
-	if err := m.db.Update(&a, orm.Eq(Agreement_.Id, a.Id)); err != nil {
-		return Agreement{}, err
-	}
-	m.publish("catalog.agreement.updated", a)
-	return a, nil
-}
-
-func (m *Module) DeleteAgreement(tenantId, id string) error {
-	a := Agreement{Id: id, TenantId: tenantId}
-	if err := m.db.Delete(&a, orm.Eq(Agreement_.Id, id)); err != nil {
-		return err
-	}
-	m.publish("catalog.agreement.deleted", map[string]string{"tenant_id": tenantId, "id": id})
-	return nil
-}
-```
-
-Tools de convenio (añádelos al slice de `Tools()`):
-
-```go
-{
-	Name:        OpListAgreements,
-	Description: "List agreements (convenios) of a catalog item",
-	Args:        &ListAgreementsArgs{},
-	Resource:    "catalog_agreement",
-	Action:      model.Read,
-	Execute:     m.mcpListAgreements,
-},
-{
-	Name:        OpUpsertAgreement,
-	Description: "Create or update an agreement (create if id is empty)",
-	Args:        &Agreement{},
-	Resource:    "catalog_agreement",
-	Action:      model.Create,
-	Execute:     m.mcpUpsertAgreement,
-},
-{
-	Name:        OpDeleteAgreement,
-	Description: "Delete an agreement",
-	Args:        &DeleteAgreementArgs{},
-	Resource:    "catalog_agreement",
-	Action:      model.Delete,
-	Execute:     m.mcpDeleteAgreement,
-},
-```
-
-Handlers MCP (espejan los del item; usa `AgreementList` generado por `ormc` para el listado):
-
-```go
-func (m *Module) mcpListAgreements(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args ListAgreementsArgs
-	if err := json.Decode(req.Params.Arguments, &args); err != nil {
-		return nil, err
-	}
-	items, err := m.ListAgreements(args.TenantId, args.CatalogItemId)
-	if err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
-	}
-	list := make(AgreementList, len(items))
-	for i := range items {
-		list[i] = &items[i]
-	}
-	var res string
-	if err := json.Encode(&list, &res); err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
-	}
-	return mcp.Text(res), nil
-}
-
-func (m *Module) mcpUpsertAgreement(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var a Agreement
-	if err := json.Decode(req.Params.Arguments, &a); err != nil {
-		return nil, err
-	}
-	out, err := m.UpsertAgreement(a)
-	if err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
-	}
-	var res string
-	if err := json.Encode(&out, &res); err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
-	}
-	return mcp.Text(res), nil
-}
-
-func (m *Module) mcpDeleteAgreement(ctx *context.Context, req mcp.Request) (*mcp.Result, error) {
-	var args DeleteAgreementArgs
-	if err := json.Decode(req.Params.Arguments, &args); err != nil {
-		return nil, err
-	}
-	if err := m.DeleteAgreement(args.TenantId, args.Id); err != nil {
-		return &mcp.Result{IsError: true, Content: err.Error()}, nil
-	}
-	return mcp.Text("agreement deleted"), nil
-}
-```
-
-> El `ItemFilter` (struct generado) sigue teniendo el campo `Type` — no lo toques. `ServiceExists`
-> **no cambia**: sigue devolviendo `item.Type == "S" && item.IsActive`.
-
-## 5. Pasos
-
-> **Dependencias (set conocido-bueno, el mismo de `service_catalog@v0.0.4`):**
-> `go get github.com/tinywasm/model@v0.0.14 github.com/tinywasm/orm@v0.9.28 github.com/tinywasm/mcp@v0.1.22 github.com/tinywasm/form@v0.2.15 github.com/tinywasm/json@v0.5.11`
-> luego `go mod tidy` (resuelve `fmt`/`context`/`time`/`unixid`). `form` pasa a dependencia **directa**
-> (antes no se importaba; ahora `model.go` usa `form/input`).
-
-1. Reescribe `model.go` con §4.1 (Kinds/widgets + `AgreementModel` + DTOs de convenio). No dejes
-   ningún `model.Field<Tipo>` (literal de enum) en el archivo.
-2. Instala y corre el generador: `go install github.com/tinywasm/orm/cmd/ormc@latest` y ejecuta `ormc`
-   en la raíz del módulo. Regenera `model_orm.go` con el struct `Agreement` (`CatalogItemId string`,
-   `Insurer`, `Code`, `Price float64`, …), su `AgreementList`, `Agreement_` (columnas) y
-   `ReadAllAgreement`/`ReadOneAgreement`. Verifica que la FK a `catalog_item` aparezca en el DDL (si no,
-   aplica el **fallback** de §2 y repórtalo).
-3. Edita `mcp.go`: importa `model`; aplica la tabla de Action (§4.2·2); añade el bloque de constantes
-   `Op*` y reemplaza los literales en `Tools()`; añade `upsert_catalog_item` (§4.2·4); rellena `Args:`
-   (§4.2·5); crea la tabla `Agreement` en `New()` y añade servicio + tools + handlers de convenio (§4.3).
-4. Ajusta consumidores/tests: `catalog_test.go` (raíz, `package itemcatalog`) sigue válido salvo
-   compilación; corre `gotest ./...` y corrige lo mínimo. **Añade** un test de CRUD de convenio
-   (`UpsertAgreement` con `Id==""` crea; con `Id` actualiza; `ListAgreements(tenant, itemID)` filtra por
-   item; `DeleteAgreement` borra) usando `sqlite.Open(":memory:")` como el test actual.
-5. Sube versiones del submódulo `tests/` (`tests/go.mod`) al mismo set y verifica que compile.
-6. Docs: actualiza `docs/ARCHITECTURE.md` y `docs/diagrams/database.md` para incluir la tabla
-   `catalog_agreement` (FK a `catalog_item`, N convenios por item) y el nuevo grupo de tools.
-
-## 6. Fuera de alcance
-
-- **No** hagas la migración de la app (repo consumidor) — es otro plan.
-- **No** renombres tipos/columnas existentes del item ni cambies su comportamiento (`ServiceExists`
-  intacto; valores `type` "S"/"P" intactos).
-- **No** conviertas `type` en `input.Select()` con opciones: fuera de alcance (queda `input.Text()`).
-- **No** "corrijas" el `encoding/json` de los *tests*: este módulo es backend y sus tests legítimamente
-  usan stdlib.
-- **No** borres los tools existentes del item (create/update/get/find/deactivate/delete): `upsert` es
-  **aditivo**.
-
-## 7. Criterios de aceptación
-
-- `gotest ./...` verde con `go.mod` en `model v0.0.14` / `orm v0.9.28` / `mcp v0.1.22` / `form v0.2.15`.
-- `grep -rn "model.Field[A-Z]" .` (excluyendo `model_orm.go` generado) **vacío**: no quedan literales de
-  enum; todo es `model.X()` o `input.X()`.
-- `grep -rn "Action: '" .` **vacío**: no quedan Action byte; todos son `model.Read/Create/Update/Delete`.
-- `CatalogItemModel` y `AgreementModel` tienen `input.X()` en cada campo editable; `catalog_item_id`
-  usa `model.Text()` + `Ref: &CatalogItemModel`.
-- `model_orm.go` regenerado incluye `Agreement`, `AgreementList`, `Agreement_`, `ReadAllAgreement`.
-- Existen y se exportan las constantes `Op*` (§4.2·3); `Tools()` no usa literales de nombre de op.
-- `New()` crea las tablas `catalog_item` **y** `catalog_agreement`.
-- Un test verifica el CRUD de convenio (upsert crea/actualiza, list filtra por item, delete borra).
-
-## 8. Etapas
-
-| # | Etapa | Archivos | Criterio |
+| Op | Reemplaza | Args a decodificar | Servicio que llama |
 |---|---|---|---|
-| 1 | Bump deps | `go.mod`, `tests/go.mod` | resuelven; `form` directa |
-| 2 | Reescribir `model.go` | `model.go` | sin literales de enum; `AgreementModel` + FK; widgets |
-| 3 | Regenerar | `model_orm.go` | struct `Agreement` + plomería + FK en DDL |
-| 4 | Migrar `mcp.go` | `mcp.go` | Action tipado, `Op*`, `upsert_catalog_item`, convenios (servicio+tools+handlers) |
-| 5 | Tests | `catalog_test.go`, `tests/` | `gotest ./...` verde + test CRUD convenio |
-| 6 | Docs | `docs/ARCHITECTURE.md`, `docs/diagrams/database.md` | reflejan `catalog_agreement` |
+| `OpGetItem` | `mcpGetItem` | `GetItemArgs` | `GetItem` |
+| `OpFindItemBySKU` | `mcpFindBySKU` | `FindBySKUArgs` | `FindBySKU` |
+| `OpCreateItem` | `mcpCreateItem` | `CatalogItem` | `CreateItem` |
+| `OpUpdateItem` | `mcpUpdateItem` | `CatalogItem` | `UpdateItem` |
+| `OpDeactivateItem` | `mcpDeactivateItem` | `DeactivateItemArgs` | `DeactivateItem` |
+| `OpListAgreements` | `mcpListAgreements` | `ListAgreementsArgs` | `ListAgreements` |
+| `OpUpsertAgreement` | `mcpUpsertAgreement` | `Agreement` | `UpsertAgreement` |
+| `OpDeleteAgreement` | `mcpDeleteAgreement` | `DeleteAgreementArgs` | `DeleteAgreement` |
+
+**Borra** todos los métodos `mcpXxx` viejos una vez migrados — no dejes las dos formas coexistiendo.
+
+### 3.6 `mcp.go` — imports finales
+
+Tras §3.2-§3.5, el bloque de imports de `mcp.go` queda:
+
+```go
+import (
+	"github.com/tinywasm/fmt"
+	"github.com/tinywasm/events"
+	"github.com/tinywasm/model"
+	"github.com/tinywasm/orm"
+	"github.com/tinywasm/router"
+	"github.com/tinywasm/time"
+)
+```
+
+`"github.com/tinywasm/context"`, `"github.com/tinywasm/json"`, `"github.com/tinywasm/mcp"`,
+`"github.com/tinywasm/unixid"` **desaparecen** — ninguno vuelve a usarse en este archivo. El `//go:build
+!wasm` de la primera línea **se mantiene** (el módulo sigue siendo server-only por su dependencia de
+`orm`/`sqlite`, no cambia con esta fase).
+
+### 3.7 `view.go` — nuevo, la vista del ítem
+
+```go
+package itemcatalog
+
+import (
+	"github.com/tinywasm/model"
+	"github.com/tinywasm/router"
+	"github.com/tinywasm/view"
+)
+
+// NewView builds the catalog item Presenter — the tech-agnostic engine a renderer (crudview,
+// or any other) wraps. It is THIS module's job to build it (importing only view+model+router);
+// the app decides which renderer draws it.
+func NewView(caller router.Caller) view.Presenter {
+	byID := map[string]*CatalogItem{} // estado privado — única excepción "cero map" (firma pública, no esto)
+	record := &CatalogItem{}
+
+	return view.New(
+		caller,
+		record,
+		OpListItems,
+		func() model.FielderSlice { return &CatalogItemList{} },
+		func(list model.FielderSlice) []view.Item {
+			l := list.(*CatalogItemList)
+			items := make([]view.Item, l.Len())
+			for i := 0; i < l.Len(); i++ {
+				it := l.At(i).(*CatalogItem)
+				byID[it.Id] = it
+				items[i] = view.Item{ID: it.Id, Label: it.Name, Description: it.Sku}
+			}
+			return items
+		},
+		view.WithTitle("Catálogo"),
+		view.WithSaveOp(OpUpsertItem),
+		view.WithDeleteOp(OpDeleteItem),
+		view.WithFill(func(id string) model.Model {
+			if id == "" {
+				return nil
+			}
+			return byID[id]
+		}),
+	)
+}
+```
+
+> **Convenios sin vista propia todavía.** `NewView` cubre solo el catálogo de ítems (paridad con lo
+> que ya existía). Una vista de convenios (`NewAgreementsView`, o una vista anidada) queda
+> **explícitamente fuera de esta fase**: "convenios sin UI" no es deuda, es una decisión — el CRUD de
+> convenios ya es alcanzable por `Op` (§3.5) aunque no tenga renderer.
+
+### 3.8 Tests existentes — `setup_test.go`/`catalog_test.go`
+
+`setup_test.go`: **borra** `MockUI` (implementaba `UIAdapter`, que ya no existe) y `MockPublisher`
+(firma vieja `Publish(event string, payload any) error`). Reemplázalo por un doble que satisfaga
+`events.Publisher`:
+
+```go
+type MockPublisher struct {
+	Events []events.Event
+}
+
+func (m *MockPublisher) Publish(e events.Event) {
+	m.Events = append(m.Events, e)
+}
+
+var _ events.Publisher = (*MockPublisher)(nil)
+```
+
+`catalog_test.go:19-21,211-212`: `New(db, Deps{UI: ui, Publisher: pub})` → `New(db, Deps{IDs:
+<generador falso o events/mock>, Publisher: pub})`. Un generador falso mínimo, junto al `MockPublisher`
+en `setup_test.go`:
+
+```go
+type sequentialIDs struct{ n int }
+
+func (s *sequentialIDs) NewID() string {
+	s.n++
+	return fmt.Sprintf("test-id-%d", s.n)
+}
+
+var _ model.IDGenerator = (*sequentialIDs)(nil)
+```
+
+Cualquier aserción en `catalog_test.go` sobre `ui.RenderItemListCalled`/`RenderItemFormCalled`
+(`MockUI`) se borra junto con `MockUI` — no queda código muerto referenciándolo.
+
+## 4. Fuera de alcance
+
+- **No** toques `model.go`/`model_orm.go` más allá de borrar `UIAdapter`/`EventPublisher` (§3.3/§3.4)
+  — el schema `Kind` y `Agreement` ya están correctos.
+- **No** toques `ListItems`/`GetItem`/`FindBySKU`/`CreateItem`/`UpdateItem`/`DeactivateItem`/
+  `DeleteItem`/`GetAgreement`/`UpsertAgreement`/`ListAgreements`/`DeleteAgreement` — la lógica de
+  negocio no cambia, solo cómo se invoca desde el borde (`opXxx` en vez de `mcpXxx`).
+- **No** le des a `MountOps` una forma distinta de `Op(...).Requires(...).Accepts(...)` — es el único
+  contrato de transporte del arnés.
+- **No** hagas que el módulo reciba `router.Router` ni implemente `router.APIModule`/`MountAPI` — ve
+  solo `router.OpRegistry`/`router.OpModule` (§1, nota de diseño).
+- **No** construyas un broker de eventos dentro del módulo — `events.Publisher` se inyecta, `nil`
+  desactiva la publicación silenciosamente (no es un error).
+- **No** añadas una vista de convenios (§3.7, nota).
+- **No** pobles el módulo anidado `tests/` (vacío hoy) — los tests de esta fase siguen la convención
+  existente: package `itemcatalog`, junto al código.
+
+## 5. Test con forma de consumidor (obligatorio, arnés de construcción)
+
+Añade a `catalog_test.go` (o un archivo nuevo `harness_test.go`, mismo paquete) un test que ejerza
+`MountOps` contra `router/mock` — prueba que un consumidor real (un composition root) puede montar
+este módulo sin conocer su interior:
+
+```go
+func TestModule_MountOpsAndView(t *testing.T) {
+	db, err := sqlite.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub := &MockPublisher{}
+	module, err := New(db, Deps{IDs: &sequentialIDs{}, Publisher: pub})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r := mock.NewRouter() // github.com/tinywasm/router/mock — ajusta al constructor real del paquete
+	module.MountOps(r)
+
+	infos := r.Routes()
+	var found bool
+	for _, i := range infos {
+		if i.Path == OpUpsertItem { // Op se registra por NOMBRE; RouteInfo.Path lleva ese nombre
+			found = true
+			if i.Resource != "catalog_item" || i.Action != model.Create {
+				t.Errorf("RBAC mismatch for %s: %+v", OpUpsertItem, i)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("MountOps did not register %s", OpUpsertItem)
+	}
+
+	caller := mock.NewCaller() // doble de router.Caller — ajusta al constructor real del paquete
+	pres := module.NewView(caller)
+	if pres.Title() == "" {
+		t.Error("expected a non-empty view title")
+	}
+}
+```
+
+> Ajusta los nombres de constructor exactos de `router/mock` (`mock.NewRouter`/`mock.NewCaller` son
+> ilustrativos) al API real publicada en `github.com/tinywasm/router/mock` — lee su `README.md` si
+> difiere.
+
+## 6. Criterios de aceptación
+
+- `grep -rn "tinywasm/mcp\|tinywasm/json\|tinywasm/unixid" .` (código no-test) **vacío**.
+- `grep -rn "router.Router\b\|router.APIModule\|MountAPI" .` (código no-test) **vacío** — el módulo
+  solo ve `router.OpRegistry`/`router.OpModule`.
+- `*Module` implementa `router.OpModule` (`ModelName`+`MountOps`); **no** existe `Tools() []mcp.Tool`.
+- `UIAdapter`, `EventPublisher`, `Deps.UI`, `RenderList`/`RenderForm`/`RenderFilter` no existen.
+- `Deps{ IDs model.IDGenerator; Publisher events.Publisher }` — `New` falla si `IDs == nil`.
+- `view.go` expone `NewView(caller router.Caller) view.Presenter`.
+- `go.mod`: `tinywasm/router@v0.1.14`+ directo, `tinywasm/events@v0.0.2`+ directo, `tinywasm/view@v0.1.0`+
+  directo; `tinywasm/mcp`, `tinywasm/unixid` **ausentes** por completo (`go mod tidy` los dropea).
+- El test de §5 verde: `MountOps` registrado contra `router/mock` con RBAC correcto, `NewView(...)`
+  produce un `Presenter` usable.
+- `gotest ./...` (o `go test ./...`) verde.
+
+## 7. Etapas
+
+| # | Etapa | Archivo(s) | Criterio |
+|---|---|---|---|
+| 1 | Bump deps | `go.mod`, `go.sum` | `router@v0.1.14`+, `events@v0.0.2`+, `view@v0.1.0`+; `mcp`/`unixid` fuera |
+| 2 | `Deps`/`Module`/`New` | `mcp.go` | `IDGenerator`+`events.Publisher` inyectados, sin `unixid` interno |
+| 3 | Eventos tipados | `mcp.go`, `model.go` | borra `EventPublisher`/`publish`; 7 call sites a `events.Event` |
+| 4 | Borrar `UIAdapter` | `model.go`, `mcp.go` | §3.4 |
+| 5 | `MountOps` | `mcp.go` | reemplaza `Tools()`; 11 ops vía `Op` sobre `OpRegistry` |
+| 6 | `view.go` | `view.go` (nuevo) | `NewView` |
+| 7 | Migrar tests existentes | `setup_test.go`, `catalog_test.go` | §3.8, sin `MockUI` |
+| 8 | Test consumidor | `catalog_test.go` o `harness_test.go` | §5, verde |
+| 9 | Verificación | — | `grep` de §6 vacío; `gotest ./...` verde |
