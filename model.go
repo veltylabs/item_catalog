@@ -52,19 +52,7 @@ var AgreementModel = model.Definition{
 	},
 }
 
-// UIAdapter — port for presentation. Implemented by the host app.
-// The module calls these methods; it never imports tinywasm/dom or components directly.
-type UIAdapter interface {
-	RenderItemList(items []CatalogItem, activeFilter string) string
-	RenderItemForm(item *CatalogItem) string // nil = empty create form
-	RenderFilterSelector(current string) string
-}
 
-// EventPublisher — compatible with tinywasm/sse but not coupled to it.
-// Pass nil to disable event publishing.
-type EventPublisher interface {
-	Publish(event string, payload any) error
-}
 
 // CatalogService — the core business interface. Implemented by *Module.
 type CatalogService interface {

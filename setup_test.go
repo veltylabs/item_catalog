@@ -1,37 +1,26 @@
 package itemcatalog
 
 import (
-	"fmt"
+	"strconv"
 
+	"github.com/tinywasm/events"
 )
 
-type MockUI struct {
-	RenderItemListCalled bool
-	RenderItemFormCalled bool
-}
-
-func (m *MockUI) RenderItemList(items []CatalogItem, activeFilter string) string {
-	m.RenderItemListCalled = true
-	return fmt.Sprintf("List: %d items", len(items))
-}
-
-func (m *MockUI) RenderItemForm(item *CatalogItem) string {
-	m.RenderItemFormCalled = true
-	if item == nil {
-		return "Empty Form"
-	}
-	return "Form: " + item.Name
-}
-
-func (m *MockUI) RenderFilterSelector(current string) string {
-	return "Filter: " + current
-}
-
 type MockPublisher struct {
-	Events []string
+	Events []events.Event
 }
 
-func (m *MockPublisher) Publish(event string, payload any) error {
-	m.Events = append(m.Events, event)
-	return nil
+func (m *MockPublisher) Publish(e events.Event) {
+	m.Events = append(m.Events, e)
+}
+
+var _ events.Publisher = (*MockPublisher)(nil)
+
+type mockIDGen struct {
+	counter int
+}
+
+func (m *mockIDGen) NewID() string {
+	m.counter++
+	return "test-id-" + strconv.Itoa(m.counter)
 }
