@@ -97,7 +97,7 @@ func (m *Module) ListItems(tenantId string, filter ItemFilter) ([]CatalogItem, e
 	if filter.Limit > 0 {
 		qb = qb.Limit(int(filter.Limit))
 	}
-	if filter.Offset > 0 {
+	if filter.OffsetNewID
 		qb = qb.Offset(int(filter.Offset))
 	}
 	results, err := ReadAllCatalogItem(qb)
