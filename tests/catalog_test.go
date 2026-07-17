@@ -29,7 +29,7 @@ func TestCatalog(t *testing.T) {
 		TenantId: tenantID,
 		Sku:      "SKU123",
 		Name:     "Test Service",
-		Type:     "S",
+		Type:     itemcatalog.ItemTypeService,
 		Price:    10.5,
 		Currency: "USD",
 		IsActive: true,
@@ -92,6 +92,17 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected 1 item, got %d", len(items))
 	}
 
+	// Test ListItems with filter and pagination
+	_, err = module.ListItems(tenantID, itemcatalog.ItemFilter{
+		Type:       itemcatalog.ItemTypeService,
+		ActiveOnly: true,
+		Limit:      5,
+		Offset:     1,
+	})
+	if err != nil {
+		t.Errorf("failed to list items with filters: %v", err)
+	}
+
 	// Test DeactivateItem
 	err = module.DeactivateItem(tenantID, created.Id)
 	if err != nil {
@@ -138,7 +149,25 @@ func TestAgreements(t *testing.T) {
 	}
 
 	tenantID := "tenant-1"
-	itemID := "item-abc"
+
+	// Create CatalogItem first so foreign key validation is satisfied (or it exists)
+	goodItem := itemcatalog.CatalogItem{
+		TenantId: tenantID,
+		Sku:      "SKU-AG",
+		Name:     "Agreement Service",
+		Type:     itemcatalog.ItemTypeService,
+		Price:    100.0,
+		Currency: "USD",
+		IsActive: true,
+	}
+	createdItem, err := module.CreateItem(goodItem)
+	if err != nil {
+		t.Fatalf("failed to create parent item: %v", err)
+	}
+	itemID := createdItem.Id
+
+	// Clear events before testing agreements
+	pub.Events = nil
 
 	// 1. Test UpsertAgreement - Create (Id == "")
 	ag := itemcatalog.Agreement{
@@ -228,7 +257,7 @@ func TestModule_MountOpsAndView(t *testing.T) {
 	for _, i := range infos {
 		if i.Path == itemcatalog.OpUpsertItem || i.Path == "/"+itemcatalog.OpUpsertItem { // Op registers as Synthetic method "OP" and path "/"+name
 			found = true
-			if i.Resource != "catalog_item" || i.Action != model.Create {
+			if i.Resource != "catalog_item" || i.Action != (model.Create|model.Update) {
 				t.Errorf("RBAC mismatch for %s: %+v", itemcatalog.OpUpsertItem, i)
 			}
 		}

@@ -15,6 +15,11 @@ require (
 )
 
 require (
+	github.com/tinywasm/css v0.1.4 // indirect
+	github.com/tinywasm/dom v0.11.2 // indirect
+)
+
+require (
 	github.com/tinywasm/json v0.5.12 // indirect
 	github.com/tinywasm/storage v0.0.2
 )

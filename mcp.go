@@ -36,6 +36,14 @@ const (
 	TopicAgreementDeleted = "catalog.agreement.deleted"
 )
 
+type ValidationError struct {
+	Err error
+}
+
+func (v ValidationError) Error() string {
+	return v.Err.Error()
+}
+
 type Deps struct {
 	IDs       model.IDGenerator // requerido — el módulo NUNCA construye un generador
 	Publisher events.Publisher  // opcional — nil desactiva la publicación de eventos
@@ -117,14 +125,26 @@ func (m *Module) ListItems(tenantId string, filter ItemFilter) ([]CatalogItem, e
 }
 
 func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
-	// Validate SKU uniqueness per tenant
-	existing, err := m.FindBySKU(item.TenantId, item.Sku)
-	if err == nil && existing.Id != "" {
-		return CatalogItem{}, ErrAlreadyExists
-	}
-
 	item.Id = m.ids.NewID()
 	item.UpdatedAt = time.Now()
+
+	if err := item.Validate(model.ActionCreate); err != nil {
+		return CatalogItem{}, ValidationError{Err: err}
+	}
+	if item.Type != ItemTypeService && item.Type != ItemTypeProduct {
+		return CatalogItem{}, ValidationError{Err: fmt.Err("invalid item type: %s", item.Type)}
+	}
+
+	// Validate SKU uniqueness per tenant
+	existing, err := m.FindBySKU(item.TenantId, item.Sku)
+	if err == nil {
+		if existing.Id != "" {
+			return CatalogItem{}, ErrAlreadyExists
+		}
+	} else if err != ErrNotFound {
+		return CatalogItem{}, err
+	}
+
 	if err := m.db.Create(&item); err != nil {
 		return CatalogItem{}, err
 	}
@@ -135,6 +155,13 @@ func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
 }
 
 func (m *Module) UpdateItem(item CatalogItem) (CatalogItem, error) {
+	if err := item.Validate(model.ActionUpdate); err != nil {
+		return CatalogItem{}, ValidationError{Err: err}
+	}
+	if item.Type != ItemTypeService && item.Type != ItemTypeProduct {
+		return CatalogItem{}, ValidationError{Err: fmt.Err("invalid item type: %s", item.Type)}
+	}
+
 	// Verify item exists and belongs to tenant
 	_, err := m.GetItem(item.TenantId, item.Id)
 	if err != nil {
@@ -142,7 +169,7 @@ func (m *Module) UpdateItem(item CatalogItem) (CatalogItem, error) {
 	}
 
 	item.UpdatedAt = time.Now()
-	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
+	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
 		return CatalogItem{}, err
 	}
 	if m.pub != nil {
@@ -158,7 +185,7 @@ func (m *Module) DeactivateItem(tenantId, id string) error {
 	}
 	item.IsActive = false
 	item.UpdatedAt = time.Now()
-	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
+	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
 		return err
 	}
 	if m.pub != nil {
@@ -172,7 +199,7 @@ func (m *Module) DeleteItem(tenantId, id string) error {
 	if err != nil {
 		return err
 	}
-	if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
+	if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
 		return err
 	}
 	if m.pub != nil {
@@ -189,7 +216,7 @@ func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
 		}
 		return false, err
 	}
-	return item.Type == "S" && item.IsActive, nil
+	return item.Type == ItemTypeService && item.IsActive, nil
 }
 
 func (m *Module) ListAgreements(tenantId, catalogItemId string) ([]Agreement, error) {
@@ -214,15 +241,29 @@ func (m *Module) GetAgreement(tenantId, id string) (Agreement, error) {
 	qb := m.db.Query(&a).Where(Agreement_.Id).Eq(id).Where(Agreement_.TenantId).Eq(tenantId)
 	_, err := ReadOneAgreement(qb, &a)
 	if err != nil {
+		if err == orm.ErrNotFound {
+			return Agreement{}, ErrNotFound
+		}
 		return Agreement{}, err
 	}
 	return a, nil
 }
 
 func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
-	a.UpdatedAt = time.Now()
+	action := model.ActionCreate
+	if a.Id != "" {
+		action = model.ActionUpdate
+	}
 	if a.Id == "" {
 		a.Id = m.ids.NewID()
+	}
+	a.UpdatedAt = time.Now()
+
+	if err := a.Validate(action); err != nil {
+		return Agreement{}, ValidationError{Err: err}
+	}
+
+	if action == model.ActionCreate {
 		if err := m.db.Create(&a); err != nil {
 			return Agreement{}, err
 		}
@@ -231,7 +272,14 @@ func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
 		}
 		return a, nil
 	}
-	if err := m.db.Update(&a, orm.Eq(Agreement_.Id, a.Id)); err != nil {
+
+	// Verify agreement exists and belongs to tenant
+	_, err := m.GetAgreement(a.TenantId, a.Id)
+	if err != nil {
+		return Agreement{}, err
+	}
+
+	if err := m.db.Update(&a, orm.Eq(Agreement_.Id, a.Id), orm.Eq(Agreement_.TenantId, a.TenantId)); err != nil {
 		return Agreement{}, err
 	}
 	if m.pub != nil {
@@ -243,31 +291,17 @@ func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
 func (m *Module) DeleteAgreement(tenantId, id string) error {
 	a, err := m.GetAgreement(tenantId, id)
 	if err != nil {
-		// fallback if not found or error, but let's try deletion anyway if the fetch failed?
-		// No, let's fetch first as instructed so we have the agreement info to publish.
-		// If fetch fails, we just try to delete a stub.
+		return err
 	}
 
-	if err == nil {
-		if err := m.db.Delete(&a, orm.Eq(Agreement_.Id, id)); err != nil {
-			return err
-		}
-		if m.pub != nil {
-			m.pub.Publish(events.Event{Topic: TopicAgreementDeleted, Payload: &a})
-		}
-		return nil
-	}
-
-	stub := Agreement{Id: id, TenantId: tenantId}
-	if err := m.db.Delete(&stub, orm.Eq(Agreement_.Id, id)); err != nil {
+	if err := m.db.Delete(&a, orm.Eq(Agreement_.Id, id), orm.Eq(Agreement_.TenantId, tenantId)); err != nil {
 		return err
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicAgreementDeleted, Payload: &stub})
+		m.pub.Publish(events.Event{Topic: TopicAgreementDeleted, Payload: &a})
 	}
 	return nil
 }
-
 
 func (m *Module) ModelName() string { return "item_catalog" }
 
@@ -277,11 +311,11 @@ func (m *Module) MountOps(reg router.OpRegistry) {
 	reg.Op(OpFindItemBySKU, m.opFindItemBySKU).Requires("catalog_item", model.Read).Accepts(&FindBySKUArgs{})
 	reg.Op(OpCreateItem, m.opCreateItem).Requires("catalog_item", model.Create).Accepts(&CatalogItem{})
 	reg.Op(OpUpdateItem, m.opUpdateItem).Requires("catalog_item", model.Update).Accepts(&CatalogItem{})
-	reg.Op(OpUpsertItem, m.opUpsertItem).Requires("catalog_item", model.Create).Accepts(&CatalogItem{})
+	reg.Op(OpUpsertItem, m.opUpsertItem).Requires("catalog_item", model.Create|model.Update).Accepts(&CatalogItem{})
 	reg.Op(OpDeactivateItem, m.opDeactivateItem).Requires("catalog_item", model.Update).Accepts(&DeactivateItemArgs{})
 	reg.Op(OpDeleteItem, m.opDeleteItem).Requires("catalog_item", model.Delete).Accepts(&DeleteItemArgs{})
 	reg.Op(OpListAgreements, m.opListAgreements).Requires("catalog_agreement", model.Read).Accepts(&ListAgreementsArgs{})
-	reg.Op(OpUpsertAgreement, m.opUpsertAgreement).Requires("catalog_agreement", model.Create).Accepts(&Agreement{})
+	reg.Op(OpUpsertAgreement, m.opUpsertAgreement).Requires("catalog_agreement", model.Create|model.Update).Accepts(&Agreement{})
 	reg.Op(OpDeleteAgreement, m.opDeleteAgreement).Requires("catalog_agreement", model.Delete).Accepts(&DeleteAgreementArgs{})
 }
 
@@ -316,7 +350,11 @@ func (m *Module) opGetItem(ctx router.Context) {
 	}
 	item, err := m.GetItem(args.TenantId, args.Id)
 	if err != nil {
-		ctx.WriteStatus(500)
+		if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	if err := ctx.Encode(&item); err != nil {
@@ -332,7 +370,11 @@ func (m *Module) opFindItemBySKU(ctx router.Context) {
 	}
 	item, err := m.FindBySKU(args.TenantId, args.Sku)
 	if err != nil {
-		ctx.WriteStatus(500)
+		if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	if err := ctx.Encode(&item); err != nil {
@@ -348,7 +390,13 @@ func (m *Module) opCreateItem(ctx router.Context) {
 	}
 	created, err := m.CreateItem(item)
 	if err != nil {
-		ctx.WriteStatus(500)
+		if _, ok := err.(ValidationError); ok {
+			ctx.WriteStatus(400)
+		} else if err == ErrAlreadyExists {
+			ctx.WriteStatus(409)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	if err := ctx.Encode(&created); err != nil {
@@ -364,7 +412,13 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 	}
 	updated, err := m.UpdateItem(item)
 	if err != nil {
-		ctx.WriteStatus(500)
+		if _, ok := err.(ValidationError); ok {
+			ctx.WriteStatus(400)
+		} else if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	if err := ctx.Encode(&updated); err != nil {
@@ -386,7 +440,15 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 		out, err = m.UpdateItem(item)
 	}
 	if err != nil {
-		ctx.WriteStatus(500)
+		if _, ok := err.(ValidationError); ok {
+			ctx.WriteStatus(400)
+		} else if err == ErrAlreadyExists {
+			ctx.WriteStatus(409)
+		} else if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	if err := ctx.Encode(&out); err != nil {
@@ -401,7 +463,11 @@ func (m *Module) opDeactivateItem(ctx router.Context) {
 		return
 	}
 	if err := m.DeactivateItem(args.TenantId, args.Id); err != nil {
-		ctx.WriteStatus(500)
+		if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	ctx.WriteStatus(200)
@@ -414,7 +480,11 @@ func (m *Module) opDeleteItem(ctx router.Context) {
 		return
 	}
 	if err := m.DeleteItem(args.TenantId, args.Id); err != nil {
-		ctx.WriteStatus(500)
+		if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	ctx.WriteStatus(200)
@@ -448,7 +518,13 @@ func (m *Module) opUpsertAgreement(ctx router.Context) {
 	}
 	out, err := m.UpsertAgreement(a)
 	if err != nil {
-		ctx.WriteStatus(500)
+		if _, ok := err.(ValidationError); ok {
+			ctx.WriteStatus(400)
+		} else if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	if err := ctx.Encode(&out); err != nil {
@@ -463,7 +539,11 @@ func (m *Module) opDeleteAgreement(ctx router.Context) {
 		return
 	}
 	if err := m.DeleteAgreement(args.TenantId, args.Id); err != nil {
-		ctx.WriteStatus(500)
+		if err == ErrNotFound {
+			ctx.WriteStatus(404)
+		} else {
+			ctx.WriteStatus(500)
+		}
 		return
 	}
 	ctx.WriteStatus(200)

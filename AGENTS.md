@@ -173,9 +173,6 @@ never runs `codejob` or `gopush` itself — dispatch and close are the human's c
 for "what does a compliant module actually look like," read this repo's `.go` files, not just the
 docs. Two things specific to this module:
 
-- **Currently broken at HEAD** (`c6f90d0`): `New()` in `mcp.go` still calls `db.CreateTable(...)`,
-  which no longer exists on `*orm.DB` (moved to `tinywasm/ddl`, see the whitelist above). See
-  `docs/PLAN.md` for the fix in flight.
 - Two entities, one parent-child relation: `CatalogItem` (service or product) and `Agreement`
   (insurer billing agreement, child of a `CatalogItem` by soft reference `catalog_item_id`). Both are
   tenant-scoped.
