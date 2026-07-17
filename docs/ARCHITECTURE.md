@@ -9,15 +9,19 @@ The `item-catalog` module manages a unified catalog of services and products for
 
 ## Patterns
 - **Reusable-module harness**: the module is coupled only to published contracts, not to concrete
-  infrastructure:
-    - `orm.DB` for storage.
+  infrastructure — see `AGENTS.md` (this repo's root) for the full whitelist/blacklist this module
+  must hold to:
+    - `orm.DB` for storage (backend-agnostic — wraps whatever `storage.Conn` the app injects).
+    - `ddl.CreateTable`/`ddl.Sync` (over `db.RawConn()`) for the module's own schema migration in
+      `New()` — replaces the removed `orm.DB.CreateTable`.
     - `router.OpModule` (`ModelName()` + `MountOps(reg router.OpRegistry)`) for transport — the module
-      never sees `router.Router`/`router.APIModule`.
+      never sees `router.Router`/`router.APIModule`, and never imports `tinywasm/mcp`.
     - `model.IDGenerator` for identity (`Deps.IDs`, required — the module never builds its own).
     - `events.Publisher` for event-driven updates (`Deps.Publisher`, optional — `nil` disables
       publishing silently).
     - `view.Presenter` (`NewView(caller router.Caller) view.Presenter`) for UI, built with only
       `view`+`model`+`router` — the app chooses the renderer.
+    - Tests run against `storage/mem`, never `tinywasm/sqlite` — see the open item in `docs/PLAN.md`.
 - **Multi-tenancy**: Every item and agreement is associated with a `tenant_id`. SKU uniqueness is enforced per tenant.
 - **Typed events**: every published event carries a `model.Encodable` payload (`&CatalogItem`/`&Agreement`),
   never a bare `map`.
