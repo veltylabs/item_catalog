@@ -142,7 +142,7 @@ reflection-free and TinyGo-sized. A module targets `wasm`/TinyGo first, so it fo
   against `view/conformance`'s `FakeCaller` or a hand-rolled fake `router.Caller` — never a concrete
   DB, transport, or renderer.
 - Tests live in `tests/` (package `tests`, external — exercises only the exported API), per the
-  ecosystem convention.
+  ecosystem convention. Conformance tests must be in a separate test file with the same name (e.g., `conformance_test.go`), keeping test files lightweight and modular.
 - Compile-time contract checks belong next to the implementation: `var _ router.OpModule =
   (*Module)(nil)`.
 

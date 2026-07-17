@@ -10,7 +10,7 @@ import (
 // or any other) wraps. It is THIS module's job to build it (importing only view+model+router);
 // the app decides which renderer draws it.
 func NewView(caller router.Caller) view.Presenter {
-	byID := map[string]*CatalogItem{} // estado privado — única excepción "cero map" (firma pública, no esto)
+	var byID []*CatalogItem
 	record := &CatalogItem{}
 
 	return view.New(
@@ -21,9 +21,10 @@ func NewView(caller router.Caller) view.Presenter {
 		func(list model.FielderSlice) []view.Item {
 			l := list.(*CatalogItemList)
 			items := make([]view.Item, l.Len())
+			byID = make([]*CatalogItem, l.Len())
 			for i := 0; i < l.Len(); i++ {
 				it := l.At(i).(*CatalogItem)
-				byID[it.Id] = it
+				byID[i] = it
 				items[i] = view.Item{ID: it.Id, Label: it.Name, Description: it.Sku}
 			}
 			return items
@@ -35,7 +36,12 @@ func NewView(caller router.Caller) view.Presenter {
 			if id == "" {
 				return nil
 			}
-			return byID[id]
+			for _, it := range byID {
+				if it != nil && it.Id == id {
+					return it
+				}
+			}
+			return nil
 		}),
 	)
 }
