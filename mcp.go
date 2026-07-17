@@ -1,8 +1,7 @@
-//go:build !wasm
-
 package itemcatalog
 
 import (
+	"github.com/tinywasm/ddl"
 	"github.com/tinywasm/events"
 	"github.com/tinywasm/fmt"
 	"github.com/tinywasm/model"
@@ -52,11 +51,13 @@ func New(db *orm.DB, deps Deps) (*Module, error) {
 	if deps.IDs == nil {
 		return nil, fmt.Err("item_catalog: Deps.IDs is required")
 	}
-	if err := db.CreateTable(&CatalogItem{}); err != nil {
-		return nil, err
-	}
-	if err := db.CreateTable(&Agreement{}); err != nil {
-		return nil, err
+	if ddlCompiler, ok := db.RawConn().(ddl.Compiler); ok {
+		if err := ddl.New(db.RawConn(), ddlCompiler).CreateTable(&CatalogItem{}); err != nil {
+			return nil, err
+		}
+		if err := ddl.New(db.RawConn(), ddlCompiler).CreateTable(&Agreement{}); err != nil {
+			return nil, err
+		}
 	}
 	return &Module{db: db, ids: deps.IDs, pub: deps.Publisher}, nil
 }
