@@ -81,7 +81,7 @@ reflection-free and TinyGo-sized. A module targets `wasm`/TinyGo first, so it fo
 
 - **Banned, use the tinywasm replacement instead:** `errors`, `strings`, `strconv`, stdlib `fmt` →
   `github.com/tinywasm/fmt`. `encoding/json` → `model.Encodable`/`Decodable` (the module never
-  chooses the concrete encoder). `database/sql` → `orm`/`storage`. `net/http` → `router`. `time` →
+  chooses the concrete encoder; in tests, use `"github.com/tinywasm/json"` for codec verification, standard library `"encoding/json"` is strictly banned everywhere). `database/sql` → `orm`/`storage`. `net/http` → `router`. `time` →
   `github.com/tinywasm/time`.
 - **Fine to use directly:** anything that isn't a contract this ecosystem already replaces —
   `testing`, `sort`, `context` (stdlib, when it's genuinely cancellation/deadlines, not the

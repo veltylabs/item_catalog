@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"encoding/json"
 	"testing"
 
+	"github.com/tinywasm/json"
 	"github.com/tinywasm/model"
 	"github.com/tinywasm/orm"
 	"github.com/tinywasm/router"
@@ -40,24 +40,17 @@ func TestMCPOperations(t *testing.T) {
 	tenantID := "tenant-1"
 
 	// 1. Create item via OP
-	item := struct {
-		TenantId string  `json:"tenant_id"`
-		Sku      string  `json:"sku"`
-		Name     string  `json:"name"`
-		Type     string  `json:"type"`
-		Price    float64 `json:"price"`
-		Currency string  `json:"currency"`
-		IsActive bool    `json:"is_active"`
-	}{
+	item := itemcatalog.CatalogItem{
 		TenantId: tenantID,
 		Sku:      "SKU-M1",
 		Name:     "Mcp Product",
-		Type:     "P",
+		Type:     itemcatalog.ItemTypeProduct,
 		Price:    100.0,
 		Currency: "USD",
 		IsActive: true,
 	}
-	itemBytes, _ := json.Marshal(item)
+	var itemBytes []byte
+	_ = json.Encode(&item, &itemBytes)
 
 	ctxCreate := &mock.Context{
 		InBody: itemBytes,
@@ -68,7 +61,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	var createdItem itemcatalog.CatalogItem
-	if err := json.Unmarshal(ctxCreate.ResponseBody(), &createdItem); err != nil {
+	if err := json.Decode(ctxCreate.ResponseBody(), &createdItem); err != nil {
 		t.Fatal(err)
 	}
 	if createdItem.Id == "" {
@@ -76,14 +69,12 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 2. Get item via OP
-	getArgs := struct {
-		TenantId string `json:"tenant_id"`
-		Id       string `json:"id"`
-	}{
+	getArgs := itemcatalog.GetItemArgs{
 		TenantId: tenantID,
 		Id:       createdItem.Id,
 	}
-	getArgsBytes, _ := json.Marshal(getArgs)
+	var getArgsBytes []byte
+	_ = json.Encode(&getArgs, &getArgsBytes)
 
 	ctxGet := &mock.Context{
 		InBody: getArgsBytes,
@@ -94,7 +85,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	var gotItem itemcatalog.CatalogItem
-	if err := json.Unmarshal(ctxGet.ResponseBody(), &gotItem); err != nil {
+	if err := json.Decode(ctxGet.ResponseBody(), &gotItem); err != nil {
 		t.Fatal(err)
 	}
 	if gotItem.Sku != "SKU-M1" {
@@ -102,14 +93,12 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 3. Find by SKU via OP
-	skuArgs := struct {
-		TenantId string `json:"tenant_id"`
-		Sku      string `json:"sku"`
-	}{
+	skuArgs := itemcatalog.FindBySKUArgs{
 		TenantId: tenantID,
 		Sku:      "SKU-M1",
 	}
-	skuArgsBytes, _ := json.Marshal(skuArgs)
+	var skuArgsBytes []byte
+	_ = json.Encode(&skuArgs, &skuArgsBytes)
 
 	ctxSku := &mock.Context{
 		InBody: skuArgsBytes,
@@ -120,26 +109,9 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 4. Update item via OP
-	updateItem := struct {
-		Id       string  `json:"id"`
-		TenantId string  `json:"tenant_id"`
-		Sku      string  `json:"sku"`
-		Name     string  `json:"name"`
-		Type     string  `json:"type"`
-		Price    float64 `json:"price"`
-		Currency string  `json:"currency"`
-		IsActive bool    `json:"is_active"`
-	}{
-		Id:       createdItem.Id,
-		TenantId: tenantID,
-		Sku:      "SKU-M1",
-		Name:     "Mcp Product Updated",
-		Type:     "P",
-		Price:    100.0,
-		Currency: "USD",
-		IsActive: true,
-	}
-	updateBytes, _ := json.Marshal(updateItem)
+	createdItem.Name = "Mcp Product Updated"
+	var updateBytes []byte
+	_ = json.Encode(&createdItem, &updateBytes)
 
 	ctxUpdate := &mock.Context{
 		InBody: updateBytes,
@@ -150,24 +122,17 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 5. Upsert item via OP (Create with empty ID)
-	upsertItem := struct {
-		TenantId string  `json:"tenant_id"`
-		Sku      string  `json:"sku"`
-		Name     string  `json:"name"`
-		Type     string  `json:"type"`
-		Price    float64 `json:"price"`
-		Currency string  `json:"currency"`
-		IsActive bool    `json:"is_active"`
-	}{
+	upsertItem := itemcatalog.CatalogItem{
 		TenantId: tenantID,
 		Sku:      "SKU-M2",
 		Name:     "Mcp Product 2",
-		Type:     "S",
+		Type:     itemcatalog.ItemTypeService,
 		Price:    200.0,
 		Currency: "USD",
 		IsActive: true,
 	}
-	upsertBytes, _ := json.Marshal(upsertItem)
+	var upsertBytes []byte
+	_ = json.Encode(&upsertItem, &upsertBytes)
 
 	ctxUpsert := &mock.Context{
 		InBody: upsertBytes,
@@ -178,25 +143,20 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	var upsertedItem itemcatalog.CatalogItem
-	if err := json.Unmarshal(ctxUpsert.ResponseBody(), &upsertedItem); err != nil {
+	if err := json.Decode(ctxUpsert.ResponseBody(), &upsertedItem); err != nil {
 		t.Fatal(err)
 	}
 
 	// 6. List items via OP
-	listArgs := struct {
-		TenantId   string `json:"tenant_id"`
-		Type       string `json:"type"`
-		ActiveOnly bool   `json:"active_only"`
-		Limit      int64  `json:"limit"`
-		Offset     int64  `json:"offset"`
-	}{
+	listArgs := itemcatalog.ListItemsArgs{
 		TenantId:   tenantID,
-		Type:       "S",
+		Type:       itemcatalog.ItemTypeService,
 		ActiveOnly: true,
 		Limit:      10,
 		Offset:     0,
 	}
-	listBytes, _ := json.Marshal(listArgs)
+	var listBytes []byte
+	_ = json.Encode(&listArgs, &listBytes)
 
 	ctxList := &mock.Context{
 		InBody: listBytes,
@@ -206,23 +166,21 @@ func TestMCPOperations(t *testing.T) {
 		t.Fatalf("expected list status success, got %d", ctxList.Status)
 	}
 
-	var listResult []*itemcatalog.CatalogItem
-	if err := json.Unmarshal(ctxList.ResponseBody(), &listResult); err != nil {
+	var listResult itemcatalog.CatalogItemList
+	if err := json.Decode(ctxList.ResponseBody(), &listResult); err != nil {
 		t.Fatal(err)
 	}
-	if len(listResult) != 1 {
-		t.Fatalf("expected 1 item of type S, got %d", len(listResult))
+	if listResult.Len() != 1 {
+		t.Fatalf("expected 1 item of type S, got %d", listResult.Len())
 	}
 
 	// 7. Deactivate item via OP
-	deactivateArgs := struct {
-		TenantId string `json:"tenant_id"`
-		Id       string `json:"id"`
-	}{
+	deactivateArgs := itemcatalog.DeactivateItemArgs{
 		TenantId: tenantID,
 		Id:       createdItem.Id,
 	}
-	deactivateBytes, _ := json.Marshal(deactivateArgs)
+	var deactivateBytes []byte
+	_ = json.Encode(&deactivateArgs, &deactivateBytes)
 
 	ctxDeactivate := &mock.Context{
 		InBody: deactivateBytes,
@@ -233,14 +191,12 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 8. Delete item via OP
-	deleteArgs := struct {
-		TenantId string `json:"tenant_id"`
-		Id       string `json:"id"`
-	}{
+	deleteArgs := itemcatalog.DeleteItemArgs{
 		TenantId: tenantID,
 		Id:       createdItem.Id,
 	}
-	deleteBytes, _ := json.Marshal(deleteArgs)
+	var deleteBytes []byte
+	_ = json.Encode(&deleteArgs, &deleteBytes)
 
 	ctxDelete := &mock.Context{
 		InBody: deleteBytes,
@@ -251,14 +207,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 9. Upsert agreement via OP (Create with empty ID)
-	ag := struct {
-		TenantId      string  `json:"tenant_id"`
-		CatalogItemId string  `json:"catalog_item_id"`
-		Insurer       string  `json:"insurer"`
-		Code          string  `json:"code"`
-		Price         float64 `json:"price"`
-		IsActive      bool    `json:"is_active"`
-	}{
+	ag := itemcatalog.Agreement{
 		TenantId:      tenantID,
 		CatalogItemId: upsertedItem.Id,
 		Insurer:       "Mcp Insurer",
@@ -266,7 +215,8 @@ func TestMCPOperations(t *testing.T) {
 		Price:         150.0,
 		IsActive:      true,
 	}
-	agBytes, _ := json.Marshal(ag)
+	var agBytes []byte
+	_ = json.Encode(&ag, &agBytes)
 
 	ctxUpsertAg := &mock.Context{
 		InBody: agBytes,
@@ -277,19 +227,17 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	var upsertedAg itemcatalog.Agreement
-	if err := json.Unmarshal(ctxUpsertAg.ResponseBody(), &upsertedAg); err != nil {
+	if err := json.Decode(ctxUpsertAg.ResponseBody(), &upsertedAg); err != nil {
 		t.Fatal(err)
 	}
 
 	// 10. List agreements via OP
-	listAgArgs := struct {
-		TenantId      string `json:"tenant_id"`
-		CatalogItemId string `json:"catalog_item_id"`
-	}{
+	listAgArgs := itemcatalog.ListAgreementsArgs{
 		TenantId:      tenantID,
 		CatalogItemId: upsertedItem.Id,
 	}
-	listAgBytes, _ := json.Marshal(listAgArgs)
+	var listAgBytes []byte
+	_ = json.Encode(&listAgArgs, &listAgBytes)
 
 	ctxListAg := &mock.Context{
 		InBody: listAgBytes,
@@ -299,23 +247,21 @@ func TestMCPOperations(t *testing.T) {
 		t.Fatalf("expected list agreements status success, got %d", ctxListAg.Status)
 	}
 
-	var listAgResult []*itemcatalog.Agreement
-	if err := json.Unmarshal(ctxListAg.ResponseBody(), &listAgResult); err != nil {
+	var listAgResult itemcatalog.AgreementList
+	if err := json.Decode(ctxListAg.ResponseBody(), &listAgResult); err != nil {
 		t.Fatal(err)
 	}
-	if len(listAgResult) != 1 {
-		t.Fatalf("expected 1 agreement, got %d", len(listAgResult))
+	if listAgResult.Len() != 1 {
+		t.Fatalf("expected 1 agreement, got %d", listAgResult.Len())
 	}
 
 	// 11. Delete agreement via OP
-	deleteAgArgs := struct {
-		TenantId string `json:"tenant_id"`
-		Id       string `json:"id"`
-	}{
+	deleteAgArgs := itemcatalog.DeleteAgreementArgs{
 		TenantId: tenantID,
 		Id:       upsertedAg.Id,
 	}
-	deleteAgBytes, _ := json.Marshal(deleteAgArgs)
+	var deleteAgBytes []byte
+	_ = json.Encode(&deleteAgArgs, &deleteAgBytes)
 
 	ctxDeleteAg := &mock.Context{
 		InBody: deleteAgBytes,
