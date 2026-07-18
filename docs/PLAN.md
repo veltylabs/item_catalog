@@ -3,8 +3,9 @@ PLAN: "fix: adopt tinywasm/ddl for schema migration, drop sqlite from tests"
 TAG: v0.3.0
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 10767037318860624234
+PR: https://github.com/veltylabs/item_catalog/pull/5
 ---
 
 > This plan is dispatched via the CodeJob workflow. See skill: **agents-workflow**.
