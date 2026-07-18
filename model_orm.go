@@ -30,17 +30,17 @@ func (m *CatalogItem) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.Sku
 func (m *CatalogItem) IsNil() bool { return m == nil }
 
 func (m *CatalogItem) EncodeFields(w model.FieldWriter) {
-	w.String("id", m.Id)
+	if m.Id != "" { w.String("id", m.Id) }
 	w.String("tenant_id", m.TenantId)
 	w.String("sku", m.Sku)
 	w.String("name", m.Name)
-	w.String("description", m.Description)
-	w.String("category", m.Category)
+	if m.Description != "" { w.String("description", m.Description) }
+	if m.Category != "" { w.String("category", m.Category) }
 	w.String("type", m.Type)
 	w.Float("price", m.Price)
 	w.String("currency", m.Currency)
 	w.Bool("is_active", m.IsActive)
-	w.Int("updated_at", m.UpdatedAt)
+	if m.UpdatedAt != 0 { w.Int("updated_at", m.UpdatedAt) }
 }
 
 func (m *CatalogItem) DecodeFields(r model.FieldReader) {
@@ -135,14 +135,14 @@ func (m *Agreement) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.Catal
 func (m *Agreement) IsNil() bool { return m == nil }
 
 func (m *Agreement) EncodeFields(w model.FieldWriter) {
-	w.String("id", m.Id)
+	if m.Id != "" { w.String("id", m.Id) }
 	w.String("tenant_id", m.TenantId)
 	w.String("catalog_item_id", m.CatalogItemId)
 	w.String("insurer", m.Insurer)
-	w.String("code", m.Code)
-	w.Float("price", m.Price)
+	if m.Code != "" { w.String("code", m.Code) }
+	if m.Price != 0 { w.Float("price", m.Price) }
 	w.Bool("is_active", m.IsActive)
-	w.Int("updated_at", m.UpdatedAt)
+	if m.UpdatedAt != 0 { w.Int("updated_at", m.UpdatedAt) }
 }
 
 func (m *Agreement) DecodeFields(r model.FieldReader) {
@@ -206,6 +206,12 @@ func ReadAllAgreement(qb *orm.QB) (AgreementList, error) {
 		func(m model.Model) { results = append(results, m.(*Agreement)) },
 	)
 	return results, err
+}
+
+func (m *Agreement) SchemaExt() []model.FieldExt {
+	return []model.FieldExt{
+		{Field: AgreementModel.Fields[2], Ref: "catalog_item", RefColumn: "id", OnDelete: ""},
+	}
 }
 
 type ItemFilter struct {

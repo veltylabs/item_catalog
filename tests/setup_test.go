@@ -1,9 +1,8 @@
-package itemcatalog
+package tests
 
 import (
-	"strconv"
-
 	"github.com/tinywasm/events"
+	"github.com/tinywasm/fmt"
 )
 
 type MockPublisher struct {
@@ -16,11 +15,11 @@ func (m *MockPublisher) Publish(e events.Event) {
 
 var _ events.Publisher = (*MockPublisher)(nil)
 
-type mockIDGen struct {
+type MockIDGen struct {
 	counter int
 }
 
-func (m *mockIDGen) NewID() string {
+func (m *MockIDGen) NewID() string {
 	m.counter++
-	return "test-id-" + strconv.Itoa(m.counter)
+	return "test-id-" + fmt.Convert(m.counter).String()
 }

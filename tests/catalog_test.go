@@ -1,23 +1,21 @@
-package itemcatalog
+package tests
 
 import (
 	"testing"
 
 	"github.com/tinywasm/model"
+	"github.com/tinywasm/orm"
 	"github.com/tinywasm/router/mock"
-	"github.com/tinywasm/sqlite"
+	"github.com/tinywasm/storage/mem"
+	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 func TestCatalog(t *testing.T) {
-	db, err := sqlite.Open(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer sqlite.Close(db)
+	db := orm.New(mem.New())
 
 	pub := &MockPublisher{}
-	module, err := New(db, Deps{
-		IDs:       &mockIDGen{},
+	module, err := itemcatalog.New(db, itemcatalog.Deps{
+		IDs:       &MockIDGen{},
 		Publisher: pub,
 	})
 	if err != nil {
@@ -27,11 +25,11 @@ func TestCatalog(t *testing.T) {
 	tenantID := "tenant-1"
 
 	// Test CreateItem
-	item := CatalogItem{
+	item := itemcatalog.CatalogItem{
 		TenantId: tenantID,
 		Sku:      "SKU123",
 		Name:     "Test Service",
-		Type:     "S",
+		Type:     itemcatalog.ItemTypeService,
 		Price:    10.5,
 		Currency: "USD",
 		IsActive: true,
@@ -86,12 +84,23 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test ListItems
-	items, err := module.ListItems(tenantID, ItemFilter{})
+	items, err := module.ListItems(tenantID, itemcatalog.ItemFilter{})
 	if err != nil {
 		t.Errorf("failed to list items: %v", err)
 	}
 	if len(items) != 1 {
 		t.Errorf("expected 1 item, got %d", len(items))
+	}
+
+	// Test ListItems with filter and pagination
+	_, err = module.ListItems(tenantID, itemcatalog.ItemFilter{
+		Type:       itemcatalog.ItemTypeService,
+		ActiveOnly: true,
+		Limit:      5,
+		Offset:     1,
+	})
+	if err != nil {
+		t.Errorf("failed to list items with filters: %v", err)
 	}
 
 	// Test DeactivateItem
@@ -128,15 +137,11 @@ func TestCatalog(t *testing.T) {
 }
 
 func TestAgreements(t *testing.T) {
-	db, err := sqlite.Open(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer sqlite.Close(db)
+	db := orm.New(mem.New())
 
 	pub := &MockPublisher{}
-	module, err := New(db, Deps{
-		IDs:       &mockIDGen{},
+	module, err := itemcatalog.New(db, itemcatalog.Deps{
+		IDs:       &MockIDGen{},
 		Publisher: pub,
 	})
 	if err != nil {
@@ -144,10 +149,28 @@ func TestAgreements(t *testing.T) {
 	}
 
 	tenantID := "tenant-1"
-	itemID := "item-abc"
+
+	// Create CatalogItem first so foreign key validation is satisfied (or it exists)
+	goodItem := itemcatalog.CatalogItem{
+		TenantId: tenantID,
+		Sku:      "SKU-AG",
+		Name:     "Agreement Service",
+		Type:     itemcatalog.ItemTypeService,
+		Price:    100.0,
+		Currency: "USD",
+		IsActive: true,
+	}
+	createdItem, err := module.CreateItem(goodItem)
+	if err != nil {
+		t.Fatalf("failed to create parent item: %v", err)
+	}
+	itemID := createdItem.Id
+
+	// Clear events before testing agreements
+	pub.Events = nil
 
 	// 1. Test UpsertAgreement - Create (Id == "")
-	ag := Agreement{
+	ag := itemcatalog.Agreement{
 		TenantId:      tenantID,
 		CatalogItemId: itemID,
 		Insurer:       "FONASA",
@@ -219,12 +242,9 @@ func TestAgreements(t *testing.T) {
 }
 
 func TestModule_MountOpsAndView(t *testing.T) {
-	db, err := sqlite.Open(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
+	db := orm.New(mem.New())
 	pub := &MockPublisher{}
-	module, err := New(db, Deps{IDs: &mockIDGen{}, Publisher: pub})
+	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}, Publisher: pub})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,19 +255,19 @@ func TestModule_MountOpsAndView(t *testing.T) {
 	infos := r.Routes()
 	var found bool
 	for _, i := range infos {
-		if i.Path == OpUpsertItem || i.Path == "/"+OpUpsertItem { // Op registers as Synthetic method "OP" and path "/"+name
+		if i.Path == itemcatalog.OpUpsertItem || i.Path == "/"+itemcatalog.OpUpsertItem { // Op registers as Synthetic method "OP" and path "/"+name
 			found = true
-			if i.Resource != "catalog_item" || i.Action != model.Create {
-				t.Errorf("RBAC mismatch for %s: %+v", OpUpsertItem, i)
+			if i.Resource != "catalog_item" || i.Action != (model.Create|model.Update) {
+				t.Errorf("RBAC mismatch for %s: %+v", itemcatalog.OpUpsertItem, i)
 			}
 		}
 	}
 	if !found {
-		t.Fatalf("MountOps did not register %s", OpUpsertItem)
+		t.Fatalf("MountOps did not register %s", itemcatalog.OpUpsertItem)
 	}
 
 	caller := &mock.Caller{}
-	pres := NewView(caller)
+	pres := itemcatalog.NewView(caller)
 	if pres.Title() == "" {
 		t.Error("expected a non-empty view title")
 	}

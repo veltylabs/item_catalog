@@ -4,7 +4,8 @@
 The `item-catalog` module manages a unified catalog of services and products for the Velty ecosystem. It serves as the source of truth for other modules, such as `appointment-booking`.
 
 ## Entities
-- **CatalogItem**: Represents a service (`S`) or product (`P`). Contains details like SKU, name, description, price, and currency.
+- **CatalogItem**: Represents a service (`S`, represented by `ItemTypeService`) or product (`P`, represented by `ItemTypeProduct`). Contains details like SKU, name, description, price, and currency.
+  - *Design Note*: What other modules (like `appointment-booking`) actually need from this entity is the *capability* of being "bookable", not the literal service label itself. If a future item classification is also bookable (e.g. a session package), comparing raw type strings across modules breaks silently. We keep these semantics fully concentrated in `ServiceExists` so extending bookable types is a single-line change in one place.
 - **Agreement**: Represents a billing/insurer agreement (convenio) associated with a catalog item. A catalog item can have multiple agreements, each specifying an insurer (e.g., FONASA, Isapre X), code, price, and active status.
 
 ## Patterns

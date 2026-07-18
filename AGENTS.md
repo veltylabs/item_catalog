@@ -81,7 +81,7 @@ reflection-free and TinyGo-sized. A module targets `wasm`/TinyGo first, so it fo
 
 - **Banned, use the tinywasm replacement instead:** `errors`, `strings`, `strconv`, stdlib `fmt` →
   `github.com/tinywasm/fmt`. `encoding/json` → `model.Encodable`/`Decodable` (the module never
-  chooses the concrete encoder). `database/sql` → `orm`/`storage`. `net/http` → `router`. `time` →
+  chooses the concrete encoder; in tests, use `"github.com/tinywasm/json"` for codec verification, standard library `"encoding/json"` is strictly banned everywhere). `database/sql` → `orm`/`storage`. `net/http` → `router`. `time` →
   `github.com/tinywasm/time`.
 - **Fine to use directly:** anything that isn't a contract this ecosystem already replaces —
   `testing`, `sort`, `context` (stdlib, when it's genuinely cancellation/deadlines, not the
@@ -142,7 +142,7 @@ reflection-free and TinyGo-sized. A module targets `wasm`/TinyGo first, so it fo
   against `view/conformance`'s `FakeCaller` or a hand-rolled fake `router.Caller` — never a concrete
   DB, transport, or renderer.
 - Tests live in `tests/` (package `tests`, external — exercises only the exported API), per the
-  ecosystem convention.
+  ecosystem convention. Conformance tests must be in a separate test file with the same name (e.g., `conformance_test.go`), keeping test files lightweight and modular.
 - Compile-time contract checks belong next to the implementation: `var _ router.OpModule =
   (*Module)(nil)`.
 
@@ -173,9 +173,6 @@ never runs `codejob` or `gopush` itself — dispatch and close are the human's c
 for "what does a compliant module actually look like," read this repo's `.go` files, not just the
 docs. Two things specific to this module:
 
-- **Currently broken at HEAD** (`c6f90d0`): `New()` in `mcp.go` still calls `db.CreateTable(...)`,
-  which no longer exists on `*orm.DB` (moved to `tinywasm/ddl`, see the whitelist above). See
-  `docs/PLAN.md` for the fix in flight.
 - Two entities, one parent-child relation: `CatalogItem` (service or product) and `Agreement`
   (insurer billing agreement, child of a `CatalogItem` by soft reference `catalog_item_id`). Both are
   tenant-scoped.
