@@ -351,7 +351,7 @@ func TestValidateConstraints(t *testing.T) {
 
 func TestFormInputsGeneration(t *testing.T) {
 	item := &itemcatalog.CatalogItem{}
-	f, err := form.New("parent", item)
+	f, err := form.New("parent", item, &MockIDGen{})
 	if err != nil {
 		t.Fatalf("failed to create form: %v", err)
 	}
