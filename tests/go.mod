@@ -14,7 +14,7 @@ require (
 	github.com/tinywasm/router v0.1.19
 	github.com/tinywasm/storage v0.0.2
 	github.com/tinywasm/view v0.1.15
-	github.com/veltylabs/item_catalog v0.3.1
+	github.com/veltylabs/item_catalog v0.3.2
 )
 
 require (
