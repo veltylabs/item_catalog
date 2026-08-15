@@ -13,17 +13,17 @@ type CanonicalSpecialty struct {
 // CanonicalSpecialties defines the list of standard specialties derived from SKU prefixes.
 var CanonicalSpecialties = []CanonicalSpecialty{
 	{Prefix: "md", Slug: "medicina-general", Name: "Medicina General"},
-	{Prefix: "do", Slug: "traumatologia-y-ortopedia", Name: "Traumatología y Ortopedia"},
+	{Prefix: "do", Slug: "dental", Name: "Dental (Odontología + Ortodoncia)"},
 	{Prefix: "tr", Slug: "traumatologia", Name: "Traumatología"},
 	{Prefix: "po", Slug: "podologia", Name: "Podología"},
 	{Prefix: "la", Slug: "laboratorio", Name: "Laboratorio"},
 	{Prefix: "ec", Slug: "ecografia", Name: "Ecografía"},
-	{Prefix: "gi", Slug: "ginecologia", Name: "Ginecología"},
+	{Prefix: "gi", Slug: "ginecologia-y-obstetricia", Name: "Ginecología y Obstetricia"},
 	{Prefix: "ca", Slug: "cardiologia", Name: "Cardiología"},
 	{Prefix: "ga", Slug: "gastroenterologia", Name: "Gastroenterología"},
 	{Prefix: "of", Slug: "oftalmologia", Name: "Oftalmología"},
 	{Prefix: "ne", Slug: "neurologia", Name: "Neurología"},
-	{Prefix: "ps", Slug: "psiquiatria", Name: "Psiquiatría"},
+	{Prefix: "ps", Slug: "psicologia", Name: "Psicología"},
 	{Prefix: "de", Slug: "dermatologia", Name: "Dermatología"},
 	{Prefix: "ra", Slug: "radiologia", Name: "Radiología"},
 }

@@ -54,7 +54,7 @@ var SpecialtyModel = model.Definition{
 		{Name: "slug", Type: input.Text(), NotNull: true,
 			Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 60}},
 		{Name: "name", Type: input.Text(), NotNull: true,
-			Permitted: model.Permitted{Minimum: 1, Maximum: 100}},
+			Permitted: model.Permitted{Letters: true, Spaces: true, Minimum: 1, Maximum: 100, Extra: []rune{'á', 'é', 'í', 'ó', 'ú', 'ñ', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ñ', '+', '(', ')'}}},
 		{Name: "description", Type: input.Textarea(), OmitEmpty: true},
 		{Name: "position", Type: BaseInt_FieldInt, OmitEmpty: true},
 		{Name: "is_published", Type: Checkbox_FieldBool},

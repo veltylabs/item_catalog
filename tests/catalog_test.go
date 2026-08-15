@@ -104,7 +104,33 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected 1 item, got %d", len(items))
 	}
 
-	// Test ListItems with filter and pagination
+	// Create second specialty and item to test filter isolation between two real specialties
+	spec2, err := module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenantID,
+		Prefix:   "of",
+		Slug:     "oftalmologia",
+		Name:     "Oftalmología",
+	})
+	if err != nil {
+		t.Fatalf("failed to create second specialty: %v", err)
+	}
+
+	item2 := itemcatalog.CatalogItem{
+		TenantId:    tenantID,
+		SpecialtyId: spec2.Id,
+		Sku:         "of1234",
+		Name:        "Ophthalmology Exam",
+		Type:        itemcatalog.ItemTypeService,
+		Price:       20.0,
+		Currency:    "USD",
+		IsActive:    true,
+	}
+	created2, err := module.CreateItem(item2)
+	if err != nil {
+		t.Fatalf("failed to create item 2: %v", err)
+	}
+
+	// Test ListItems with filter matching spec1
 	filteredItems, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
 		SpecialtyId: spec.Id,
 		Type:        itemcatalog.ItemTypeService,
@@ -115,19 +141,27 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to list items with filters: %v", err)
 	}
-	if len(filteredItems) != 1 {
-		t.Errorf("expected 1 item with specialty filter, got %d", len(filteredItems))
+	if len(filteredItems) != 1 || filteredItems[0].Id != created.Id {
+		t.Errorf("expected 1 item with specialty spec1 ID %s, got %d items", created.Id, len(filteredItems))
 	}
 
-	// Test ListItems with non-matching specialty filter
-	emptyFilter, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
-		SpecialtyId: "other-spec-id",
+	// Test ListItems with filter matching spec2
+	filteredItems2, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
+		SpecialtyId: spec2.Id,
 	})
 	if err != nil {
-		t.Errorf("failed to list items with non-matching specialty filter: %v", err)
+		t.Errorf("failed to list items with spec2 filter: %v", err)
 	}
-	if len(emptyFilter) != 0 {
-		t.Errorf("expected 0 items with non-matching specialty filter, got %d", len(emptyFilter))
+	if len(filteredItems2) != 1 || filteredItems2[0].Id != created2.Id {
+		t.Errorf("expected 1 item with specialty spec2 ID %s, got %d items", created2.Id, len(filteredItems2))
+	}
+
+	// Clean up second item and specialty for rest of test flow
+	if err := module.DeleteItem(tenantID, created2.Id); err != nil {
+		t.Fatalf("failed to delete item 2: %v", err)
+	}
+	if err := module.DeleteSpecialty(tenantID, spec2.Id); err != nil {
+		t.Fatalf("failed to delete specialty 2: %v", err)
 	}
 
 	// Test DeleteSpecialty while in use -> should fail with ErrSpecialtyInUse
