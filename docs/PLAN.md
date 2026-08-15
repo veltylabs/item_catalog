@@ -2,6 +2,8 @@
 PLAN: "feat!: especialidad como entidad — category deja de ser texto libre"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 2953710230884396415
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: agents-workflow.
