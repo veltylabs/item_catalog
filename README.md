@@ -20,21 +20,34 @@ module, _ := itemcatalog.New(db, itemcatalog.Deps{
 	IDs: idGenerator,
 })
 
+// Create specialty
+specialty, _ := module.UpsertSpecialty(itemcatalog.Specialty{
+	TenantId: "my-tenant",
+	Prefix:   "md",
+	Slug:     "medicina-general",
+	Name:     "Medicina General",
+})
+
 // Use the module
 item, _ := module.CreateItem(itemcatalog.CatalogItem{
-	TenantId: "my-tenant",
-	Sku:      "SKU001",
-	Name:     "Initial Product",
-	Type:     itemcatalog.ItemTypeProduct,
-	Price:    100,
-	Currency: "USD",
-	IsActive: "true",
+	TenantId:    "my-tenant",
+	SpecialtyId: specialty.Id,
+	Sku:         "md0001",
+	Name:        "Initial Product",
+	Type:        itemcatalog.ItemTypeProduct,
+	Price:       100,
+	Currency:    "USD",
+	IsActive:    true,
 })
 ```
 
 ## Ops
 | Op Name | Description |
 |-----------|-------------|
+| `list_specialties` | List specialties for a tenant |
+| `get_specialty` | Get specialty by ID |
+| `upsert_specialty` | Create or update specialty |
+| `delete_specialty` | Delete specialty |
 | `list_catalog_items` | List items for a tenant |
 | `get_catalog_item` | Get item by ID |
 | `find_item_by_sku` | Find item by SKU |
@@ -52,5 +65,6 @@ item, _ := module.CreateItem(itemcatalog.CatalogItem{
 |------|---------|
 | `model.go` | Data structures and schemas |
 | `mcp.go` | Core logic and transport operations |
+| `migration.go` | SKU prefix to specialty migration |
 | `model_orm.go` | Generated ORM helpers |
 | `tests/` | Functional and unit tests |

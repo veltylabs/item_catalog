@@ -20,15 +20,33 @@ func TestTenantIsolation(t *testing.T) {
 	tenantA := "tenant-A"
 	tenantB := "tenant-B"
 
+	// Create specialty for tenant A
+	specA, err := module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenantA,
+		Prefix:   "md",
+		Slug:     "medicina-general",
+		Name:     "Medicina General",
+	})
+	if err != nil {
+		t.Fatalf("failed to create specialty A: %v", err)
+	}
+
+	// Tenant B cannot get tenant A's specialty
+	_, err = module.GetSpecialty(tenantB, specA.Id)
+	if err != itemcatalog.ErrSpecialtyNotFound {
+		t.Errorf("expected ErrSpecialtyNotFound for tenant B getting tenant A's specialty, got %v", err)
+	}
+
 	// Create an item as tenant A
 	itemA := itemcatalog.CatalogItem{
-		TenantId: tenantA,
-		Sku:      "SKU-A",
-		Name:     "Tenant A Product",
-		Type:     itemcatalog.ItemTypeProduct,
-		Price:    10.0,
-		Currency: "USD",
-		IsActive: true,
+		TenantId:    tenantA,
+		SpecialtyId: specA.Id,
+		Sku:         "md-SKU-A",
+		Name:        "Tenant A Product",
+		Type:        itemcatalog.ItemTypeProduct,
+		Price:       10.0,
+		Currency:    "USD",
+		IsActive:    true,
 	}
 
 	createdA, err := module.CreateItem(itemA)

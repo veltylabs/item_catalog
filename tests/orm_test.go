@@ -13,50 +13,76 @@ import (
 
 type fakeWriter struct{}
 
-func (f fakeWriter) String(name, val string)        {}
-func (f fakeWriter) Int(name string, val int64)     {}
-func (f fakeWriter) Float(name string, val float64) {}
-func (f fakeWriter) Bool(name string, val bool)     {}
-func (f fakeWriter) Bytes(name string, val []byte)  {}
-func (f fakeWriter) Null(name string)               {}
-func (f fakeWriter) Raw(name, val string)           {}
+func (f fakeWriter) String(name, val string)                 {}
+func (f fakeWriter) Int(name string, val int64)              {}
+func (f fakeWriter) Float(name string, val float64)          {}
+func (f fakeWriter) Bool(name string, val bool)              {}
+func (f fakeWriter) Bytes(name string, val []byte)           {}
+func (f fakeWriter) Null(name string)                        {}
+func (f fakeWriter) Raw(name, val string)                    {}
 func (f fakeWriter) Object(name string, val model.Encodable) {}
-func (f fakeWriter) Array(name string, n int) model.ArrayWriter { return fakeArrayWriter{} }
+func (f fakeWriter) Array(name string, n int) model.ArrayWriter {
+	return fakeArrayWriter{}
+}
 
 type fakeArrayWriter struct{}
 
-func (f fakeArrayWriter) String(val string)         {}
-func (f fakeArrayWriter) Int(val int64)             {}
-func (f fakeArrayWriter) Float(val float64)         {}
-func (f fakeArrayWriter) Bool(val bool)             {}
-func (f fakeArrayWriter) Bytes(val []byte)          {}
+func (f fakeArrayWriter) String(val string)          {}
+func (f fakeArrayWriter) Int(val int64)              {}
+func (f fakeArrayWriter) Float(val float64)          {}
+func (f fakeArrayWriter) Bool(val bool)              {}
+func (f fakeArrayWriter) Bytes(val []byte)           {}
 func (f fakeArrayWriter) Object(val model.Encodable) {}
-func (f fakeArrayWriter) Close()                    {}
+func (f fakeArrayWriter) Close()                     {}
 
 type fakeReader struct{}
 
-func (f fakeReader) String(name string) (string, bool)             { return "", true }
-func (f fakeReader) Int(name string) (int64, bool)                 { return 0, true }
-func (f fakeReader) Float(name string) (float64, bool)             { return 0.0, true }
-func (f fakeReader) Bool(name string) (bool, bool)                 { return false, true }
-func (f fakeReader) Bytes(name string) ([]byte, bool)              { return nil, true }
-func (f fakeReader) Object(name string, into model.Decodable) bool { return true }
-func (f fakeReader) Array(name string) (model.ArrayReader, bool)   { return fakeArrayReader{}, true }
-func (f fakeReader) Raw(name string) (string, bool)                { return "", true }
+func (f fakeReader) String(name string) (string, bool) { return "", true }
+func (f fakeReader) Int(name string) (int64, bool)     { return 0, true }
+func (f fakeReader) Float(name string) (float64, bool) { return 0.0, true }
+func (f fakeReader) Bool(name string) (bool, bool)     { return false, true }
+func (f fakeReader) Bytes(name string) ([]byte, bool)  { return nil, true }
+func (f fakeReader) Object(name string, into model.Decodable) bool {
+	return true
+}
+func (f fakeReader) Array(name string) (model.ArrayReader, bool) { return fakeArrayReader{}, true }
+func (f fakeReader) Raw(name string) (string, bool)              { return "", true }
 
 type fakeArrayReader struct{}
 
 func (f fakeArrayReader) Len() int                               { return 0 }
-func (f fakeArrayReader) String(i int) string                     { return "" }
-func (f fakeArrayReader) Int(i int) int64                         { return 0 }
-func (f fakeArrayReader) Float(i int) float64                     { return 0.0 }
-func (f fakeArrayReader) Bool(i int) bool                         { return false }
-func (f fakeArrayReader) Bytes(i int) []byte                      { return nil }
+func (f fakeArrayReader) String(i int) string                    { return "" }
+func (f fakeArrayReader) Int(i int) int64                        { return 0 }
+func (f fakeArrayReader) Float(i int) float64                    { return 0.0 }
+func (f fakeArrayReader) Bool(i int) bool                        { return false }
+func (f fakeArrayReader) Bytes(i int) []byte                     { return nil }
 func (f fakeArrayReader) Object(i int, into model.Decodable) bool { return true }
 
 func TestORMBoilerplate(t *testing.T) {
 	fw := fakeWriter{}
 	fr := fakeReader{}
+
+	// Specialty
+	{
+		m := &itemcatalog.Specialty{}
+		_ = m.ModelName()
+		_ = m.Schema()
+		_ = m.Pointers()
+		_ = m.IsNil()
+		m.EncodeFields(fw)
+		m.DecodeFields(fr)
+		_ = m.Validate(0)
+
+		l := &itemcatalog.SpecialtyList{}
+		_ = l.Schema()
+		_ = l.Pointers()
+		_ = l.Len()
+		_ = l.IsNil()
+		_ = l.Append()
+		_ = l.At(0)
+		l.EncodeFields(fw)
+		l.DecodeFields(fr)
+	}
 
 	// CatalogItem
 	{
@@ -68,6 +94,7 @@ func TestORMBoilerplate(t *testing.T) {
 		m.EncodeFields(fw)
 		m.DecodeFields(fr)
 		_ = m.Validate(0)
+		_ = m.SchemaExt()
 
 		l := &itemcatalog.CatalogItemList{}
 		_ = l.Schema()
@@ -270,16 +297,79 @@ func TestORMBoilerplate(t *testing.T) {
 		l.EncodeFields(fw)
 		l.DecodeFields(fr)
 	}
+
+	// ListSpecialtiesArgs
+	{
+		m := &itemcatalog.ListSpecialtiesArgs{}
+		_ = m.ModelName()
+		_ = m.Schema()
+		_ = m.Pointers()
+		_ = m.IsNil()
+		m.EncodeFields(fw)
+		m.DecodeFields(fr)
+
+		l := &itemcatalog.ListSpecialtiesArgsList{}
+		_ = l.Schema()
+		_ = l.Pointers()
+		_ = l.Len()
+		_ = l.IsNil()
+		_ = l.Append()
+		_ = l.At(0)
+		l.EncodeFields(fw)
+		l.DecodeFields(fr)
+	}
+
+	// GetSpecialtyArgs
+	{
+		m := &itemcatalog.GetSpecialtyArgs{}
+		_ = m.ModelName()
+		_ = m.Schema()
+		_ = m.Pointers()
+		_ = m.IsNil()
+		m.EncodeFields(fw)
+		m.DecodeFields(fr)
+
+		l := &itemcatalog.GetSpecialtyArgsList{}
+		_ = l.Schema()
+		_ = l.Pointers()
+		_ = l.Len()
+		_ = l.IsNil()
+		_ = l.Append()
+		_ = l.At(0)
+		l.EncodeFields(fw)
+		l.DecodeFields(fr)
+	}
+
+	// DeleteSpecialtyArgs
+	{
+		m := &itemcatalog.DeleteSpecialtyArgs{}
+		_ = m.ModelName()
+		_ = m.Schema()
+		_ = m.Pointers()
+		_ = m.IsNil()
+		m.EncodeFields(fw)
+		m.DecodeFields(fr)
+
+		l := &itemcatalog.DeleteSpecialtyArgsList{}
+		_ = l.Schema()
+		_ = l.Pointers()
+		_ = l.Len()
+		_ = l.IsNil()
+		_ = l.Append()
+		_ = l.At(0)
+		l.EncodeFields(fw)
+		l.DecodeFields(fr)
+	}
 }
 
 func TestEncodeDecodeRoundtrip(t *testing.T) {
 	item := itemcatalog.CatalogItem{
 		Id:          "item-123",
 		TenantId:    "tenant-1",
+		SpecialtyId: "spec-123",
 		Sku:         "SKU-1",
 		Name:        "Name 1",
 		Description: "Desc 1",
-		Category:    "Cat 1",
 		Type:        itemcatalog.ItemTypeService,
 		Price:       150.0,
 		Currency:    "USD",
@@ -305,6 +395,11 @@ func TestEncodeDecodeRoundtrip(t *testing.T) {
 }
 
 func TestSchemaPointersLength(t *testing.T) {
+	spec := &itemcatalog.Specialty{}
+	if len(spec.Schema()) != len(spec.Pointers()) {
+		t.Errorf("expected len(Schema) %d == len(Pointers) %d", len(spec.Schema()), len(spec.Pointers()))
+	}
+
 	item := &itemcatalog.CatalogItem{}
 	if len(item.Schema()) != len(item.Pointers()) {
 		t.Errorf("expected len(Schema) %d == len(Pointers) %d", len(item.Schema()), len(item.Pointers()))
@@ -318,15 +413,16 @@ func TestSchemaPointersLength(t *testing.T) {
 
 func TestValidateConstraints(t *testing.T) {
 	goodItem := itemcatalog.CatalogItem{
-		Id:        "item-1",
-		TenantId:  "tenant-1",
-		Sku:       "SKU-1",
-		Name:      "Good Item",
-		Type:      itemcatalog.ItemTypeService,
-		Price:     100.0,
-		Currency:  "USD",
-		IsActive:  true,
-		UpdatedAt: 12345,
+		Id:          "item-1",
+		TenantId:    "tenant-1",
+		SpecialtyId: "spec-1",
+		Sku:         "SKU-1",
+		Name:        "Good Item",
+		Type:        itemcatalog.ItemTypeService,
+		Price:       100.0,
+		Currency:    "USD",
+		IsActive:    true,
+		UpdatedAt:   12345,
 	}
 
 	if err := goodItem.Validate(model.ActionCreate); err != nil {
@@ -358,8 +454,8 @@ func TestFormInputsGeneration(t *testing.T) {
 
 	// We expect the form to contain editable input widgets for user-editable fields,
 	// and NOT for machine-managed fields (id, tenant_id, updated_at).
-	// Let's check each input widget.
-	editableFields := []string{"sku", "name", "description", "category", "type", "price", "currency", "is_active"}
+	// specialty_id is a Ref field (model.Text()) not input.Input, so editable form input fields are:
+	editableFields := []string{"sku", "name", "description", "type", "price", "currency", "is_active"}
 	for _, field := range f.Inputs {
 		name := field.FieldName()
 		isEditable := false
