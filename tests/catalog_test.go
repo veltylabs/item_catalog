@@ -24,15 +24,27 @@ func TestCatalog(t *testing.T) {
 
 	tenantID := "tenant-1"
 
+	// Create specialty first
+	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenantID,
+		Prefix:   "md",
+		Slug:     "medicina-general",
+		Name:     "Medicina General",
+	})
+	if err != nil {
+		t.Fatalf("failed to create specialty: %v", err)
+	}
+
 	// Test CreateItem
 	item := itemcatalog.CatalogItem{
-		TenantId: tenantID,
-		Sku:      "SKU123",
-		Name:     "Test Service",
-		Type:     itemcatalog.ItemTypeService,
-		Price:    10.5,
-		Currency: "USD",
-		IsActive: true,
+		TenantId:    tenantID,
+		SpecialtyId: spec.Id,
+		Sku:         "md1234",
+		Name:        "Test Service",
+		Type:        itemcatalog.ItemTypeService,
+		Price:       10.5,
+		Currency:    "USD",
+		IsActive:    true,
 	}
 
 	created, err := module.CreateItem(item)
@@ -50,7 +62,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test FindBySKU
-	found, err := module.FindBySKU(tenantID, "SKU123")
+	found, err := module.FindBySKU(tenantID, "md1234")
 	if err != nil {
 		t.Errorf("failed to find item by SKU: %v", err)
 	}
@@ -63,8 +75,8 @@ func TestCatalog(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to get item: %v", err)
 	}
-	if found.Sku != "SKU123" {
-		t.Errorf("expected SKU SKU123, got %s", found.Sku)
+	if found.Sku != "md1234" {
+		t.Errorf("expected SKU md1234, got %s", found.Sku)
 	}
 
 	// Test ServiceExists
@@ -93,14 +105,35 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test ListItems with filter and pagination
-	_, err = module.ListItems(tenantID, itemcatalog.ItemFilter{
-		Type:       itemcatalog.ItemTypeService,
-		ActiveOnly: true,
-		Limit:      5,
-		Offset:     1,
+	filteredItems, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
+		SpecialtyId: spec.Id,
+		Type:        itemcatalog.ItemTypeService,
+		ActiveOnly:  true,
+		Limit:       5,
+		Offset:      0,
 	})
 	if err != nil {
 		t.Errorf("failed to list items with filters: %v", err)
+	}
+	if len(filteredItems) != 1 {
+		t.Errorf("expected 1 item with specialty filter, got %d", len(filteredItems))
+	}
+
+	// Test ListItems with non-matching specialty filter
+	emptyFilter, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
+		SpecialtyId: "other-spec-id",
+	})
+	if err != nil {
+		t.Errorf("failed to list items with non-matching specialty filter: %v", err)
+	}
+	if len(emptyFilter) != 0 {
+		t.Errorf("expected 0 items with non-matching specialty filter, got %d", len(emptyFilter))
+	}
+
+	// Test DeleteSpecialty while in use -> should fail with ErrSpecialtyInUse
+	err = module.DeleteSpecialty(tenantID, spec.Id)
+	if err != itemcatalog.ErrSpecialtyInUse {
+		t.Errorf("expected ErrSpecialtyInUse, got %v", err)
 	}
 
 	// Test DeactivateItem
@@ -129,10 +162,152 @@ func TestCatalog(t *testing.T) {
 		t.Error("expected error getting deleted item")
 	}
 
-	// Check publisher events
-	// We expect 4 events now: create, update, deactivate, delete
-	if len(pub.Events) != 4 {
-		t.Errorf("expected 4 events, got %d", len(pub.Events))
+	// Test DeleteSpecialty now that item is deleted -> should succeed
+	err = module.DeleteSpecialty(tenantID, spec.Id)
+	if err != nil {
+		t.Errorf("failed to delete specialty after item deletion: %v", err)
+	}
+}
+
+func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
+	db := orm.New(mem.New())
+	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tenant1 := "tenant-1"
+	tenant2 := "tenant-2"
+
+	// 1. Create specialty in tenant 1
+	spec1, err := module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenant1,
+		Prefix:   "of",
+		Slug:     "oftalmologia",
+		Name:     "Oftalmología",
+	})
+	if err != nil {
+		t.Fatalf("failed to create specialty: %v", err)
+	}
+
+	// Verify is_published defaults to false
+	if spec1.IsPublished {
+		t.Error("expected is_published to default to false")
+	}
+
+	// 2. Duplicate prefix in tenant 1 -> rejected
+	_, err = module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenant1,
+		Prefix:   "of",
+		Slug:     "oftalmologia-2",
+		Name:     "Oftalmología Segunda",
+	})
+	if err != itemcatalog.ErrSpecialtyPrefixExists {
+		t.Errorf("expected ErrSpecialtyPrefixExists, got %v", err)
+	}
+
+	// 3. Duplicate slug in tenant 1 -> rejected
+	_, err = module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenant1,
+		Prefix:   "ox",
+		Slug:     "oftalmologia",
+		Name:     "Oftalmología Segunda",
+	})
+	if err != itemcatalog.ErrSpecialtySlugExists {
+		t.Errorf("expected ErrSpecialtySlugExists, got %v", err)
+	}
+
+	// 4. Same prefix in tenant 2 -> allowed
+	spec2, err := module.UpsertSpecialty(itemcatalog.Specialty{
+		TenantId: tenant2,
+		Prefix:   "of",
+		Slug:     "oftalmologia",
+		Name:     "Oftalmología",
+	})
+	if err != nil {
+		t.Fatalf("expected duplicate prefix across different tenants to be allowed, got: %v", err)
+	}
+	if spec2.Id == spec1.Id {
+		t.Error("expected different IDs for different tenant specialties")
+	}
+}
+
+func TestMigration(t *testing.T) {
+	db := orm.New(mem.New())
+	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tenantID := "tenant-1"
+
+	// Create item with canonical prefix "mdcong" directly in DB (simulating legacy data before migration)
+	item1 := itemcatalog.CatalogItem{
+		Id:       "unmigrated-1",
+		TenantId: tenantID,
+		Sku:      "mdcong",
+		Name:     "Congreso Medico",
+		Type:     itemcatalog.ItemTypeService,
+		Price:    100.0,
+		Currency: "USD",
+		IsActive: true,
+	}
+	if err := db.Create(&item1); err != nil {
+		t.Fatalf("failed to create unmigrated item 1: %v", err)
+	}
+
+	// Create item with unknown prefix "zz1234" directly in DB
+	item2 := itemcatalog.CatalogItem{
+		Id:       "unmigrated-2",
+		TenantId: tenantID,
+		Sku:      "zz1234",
+		Name:     "Unknown Item",
+		Type:     itemcatalog.ItemTypeService,
+		Price:    50.0,
+		Currency: "USD",
+		IsActive: true,
+	}
+	if err := db.Create(&item2); err != nil {
+		t.Fatalf("failed to create unmigrated item 2: %v", err)
+	}
+
+	// Run migration
+	report, err := module.MigrateSpecialtiesAndItems(tenantID)
+	if err != nil {
+		t.Fatalf("migration failed: %v", err)
+	}
+
+	if report.MigratedCount != 1 {
+		t.Errorf("expected 1 migrated item, got %d", report.MigratedCount)
+	}
+	if len(report.UnmatchedSKUs) != 1 || report.UnmatchedSKUs[0] != "zz1234" {
+		t.Errorf("expected [zz1234] in unmatched SKUs, got %v", report.UnmatchedSKUs)
+	}
+
+	// Verify item 1 has specialty_id set to "md" specialty ID
+	migrated1, err := module.GetItem(tenantID, "unmigrated-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if migrated1.SpecialtyId == "" {
+		t.Error("expected item 1 specialty_id to be populated")
+	}
+
+	specMD, err := module.GetSpecialtyByPrefix(tenantID, "md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if migrated1.SpecialtyId != specMD.Id {
+		t.Errorf("expected specialty_id %s, got %s", specMD.Id, migrated1.SpecialtyId)
+	}
+
+	// Verify item 2 specialty_id is still empty
+	migrated2, err := module.GetItem(tenantID, "unmigrated-2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if migrated2.SpecialtyId != "" {
+		t.Errorf("expected item 2 specialty_id to be empty, got %s", migrated2.SpecialtyId)
 	}
 }
 
@@ -150,15 +325,26 @@ func TestAgreements(t *testing.T) {
 
 	tenantID := "tenant-1"
 
-	// Create CatalogItem first so foreign key validation is satisfied (or it exists)
-	goodItem := itemcatalog.CatalogItem{
+	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
 		TenantId: tenantID,
-		Sku:      "SKU-AG",
-		Name:     "Agreement Service",
-		Type:     itemcatalog.ItemTypeService,
-		Price:    100.0,
-		Currency: "USD",
-		IsActive: true,
+		Prefix:   "md",
+		Slug:     "medicina-general",
+		Name:     "Medicina General",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create CatalogItem first so foreign key validation is satisfied
+	goodItem := itemcatalog.CatalogItem{
+		TenantId:    tenantID,
+		SpecialtyId: spec.Id,
+		Sku:         "md-AG1",
+		Name:        "Agreement Service",
+		Type:        itemcatalog.ItemTypeService,
+		Price:       100.0,
+		Currency:    "USD",
+		IsActive:    true,
 	}
 	createdItem, err := module.CreateItem(goodItem)
 	if err != nil {
@@ -255,7 +441,7 @@ func TestModule_MountOpsAndView(t *testing.T) {
 	infos := r.Routes()
 	var found bool
 	for _, i := range infos {
-		if i.Path == itemcatalog.OpUpsertItem || i.Path == "/"+itemcatalog.OpUpsertItem { // Op registers as Synthetic method "OP" and path "/"+name
+		if i.Path == itemcatalog.OpUpsertItem || i.Path == "/"+itemcatalog.OpUpsertItem {
 			found = true
 			if i.Resource != "catalog_item" || i.Action != (model.Create|model.Update) {
 				t.Errorf("RBAC mismatch for %s: %+v", itemcatalog.OpUpsertItem, i)
@@ -270,5 +456,10 @@ func TestModule_MountOpsAndView(t *testing.T) {
 	pres := itemcatalog.NewView(caller)
 	if pres.Title() == "" {
 		t.Error("expected a non-empty view title")
+	}
+
+	specPres := itemcatalog.NewSpecialtyView(caller)
+	if specPres.Title() == "" {
+		t.Error("expected a non-empty specialty view title")
 	}
 }

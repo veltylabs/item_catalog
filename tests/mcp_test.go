@@ -39,15 +39,65 @@ func TestMCPOperations(t *testing.T) {
 
 	tenantID := "tenant-1"
 
+	// 0. Upsert Specialty via OP
+	spec := itemcatalog.Specialty{
+		TenantId: tenantID,
+		Prefix:   "md",
+		Slug:     "medicina-general",
+		Name:     "Medicina General",
+	}
+	var specBytes []byte
+	_ = json.Encode(&spec, &specBytes)
+
+	ctxSpecUpsert := &mock.Context{
+		InBody: specBytes,
+	}
+	r.Invoke("OP", "/"+itemcatalog.OpUpsertSpecialty, ctxSpecUpsert)
+	if ctxSpecUpsert.Status != 0 && ctxSpecUpsert.Status != 200 {
+		t.Fatalf("expected specialty upsert status success, got %d", ctxSpecUpsert.Status)
+	}
+
+	var createdSpec itemcatalog.Specialty
+	if err := json.Decode(ctxSpecUpsert.ResponseBody(), &createdSpec); err != nil {
+		t.Fatal(err)
+	}
+	if createdSpec.Id == "" {
+		t.Fatal("expected non-empty Specialty ID")
+	}
+
+	// List Specialties via OP
+	listSpecArgs := itemcatalog.ListSpecialtiesArgs{
+		TenantId: tenantID,
+	}
+	var listSpecBytes []byte
+	_ = json.Encode(&listSpecArgs, &listSpecBytes)
+
+	ctxSpecList := &mock.Context{
+		InBody: listSpecBytes,
+	}
+	r.Invoke("OP", "/"+itemcatalog.OpListSpecialties, ctxSpecList)
+	if ctxSpecList.Status != 0 && ctxSpecList.Status != 200 {
+		t.Fatalf("expected specialty list status success, got %d", ctxSpecList.Status)
+	}
+
+	var specListResult itemcatalog.SpecialtyList
+	if err := json.Decode(ctxSpecList.ResponseBody(), &specListResult); err != nil {
+		t.Fatal(err)
+	}
+	if specListResult.Len() != 1 {
+		t.Fatalf("expected 1 specialty, got %d", specListResult.Len())
+	}
+
 	// 1. Create item via OP
 	item := itemcatalog.CatalogItem{
-		TenantId: tenantID,
-		Sku:      "SKU-M1",
-		Name:     "Mcp Product",
-		Type:     itemcatalog.ItemTypeProduct,
-		Price:    100.0,
-		Currency: "USD",
-		IsActive: true,
+		TenantId:    tenantID,
+		SpecialtyId: createdSpec.Id,
+		Sku:         "md-M1",
+		Name:        "Mcp Product",
+		Type:        itemcatalog.ItemTypeProduct,
+		Price:       100.0,
+		Currency:    "USD",
+		IsActive:    true,
 	}
 	var itemBytes []byte
 	_ = json.Encode(&item, &itemBytes)
@@ -88,14 +138,14 @@ func TestMCPOperations(t *testing.T) {
 	if err := json.Decode(ctxGet.ResponseBody(), &gotItem); err != nil {
 		t.Fatal(err)
 	}
-	if gotItem.Sku != "SKU-M1" {
-		t.Fatalf("expected SKU SKU-M1, got %s", gotItem.Sku)
+	if gotItem.Sku != "md-M1" {
+		t.Fatalf("expected SKU md-M1, got %s", gotItem.Sku)
 	}
 
 	// 3. Find by SKU via OP
 	skuArgs := itemcatalog.FindBySKUArgs{
 		TenantId: tenantID,
-		Sku:      "SKU-M1",
+		Sku:      "md-M1",
 	}
 	var skuArgsBytes []byte
 	_ = json.Encode(&skuArgs, &skuArgsBytes)
@@ -123,13 +173,14 @@ func TestMCPOperations(t *testing.T) {
 
 	// 5. Upsert item via OP (Create with empty ID)
 	upsertItem := itemcatalog.CatalogItem{
-		TenantId: tenantID,
-		Sku:      "SKU-M2",
-		Name:     "Mcp Product 2",
-		Type:     itemcatalog.ItemTypeService,
-		Price:    200.0,
-		Currency: "USD",
-		IsActive: true,
+		TenantId:    tenantID,
+		SpecialtyId: createdSpec.Id,
+		Sku:         "md-M2",
+		Name:        "Mcp Product 2",
+		Type:        itemcatalog.ItemTypeService,
+		Price:       200.0,
+		Currency:    "USD",
+		IsActive:    true,
 	}
 	var upsertBytes []byte
 	_ = json.Encode(&upsertItem, &upsertBytes)
@@ -149,11 +200,12 @@ func TestMCPOperations(t *testing.T) {
 
 	// 6. List items via OP
 	listArgs := itemcatalog.ListItemsArgs{
-		TenantId:   tenantID,
-		Type:       itemcatalog.ItemTypeService,
-		ActiveOnly: true,
-		Limit:      10,
-		Offset:     0,
+		TenantId:    tenantID,
+		SpecialtyId: createdSpec.Id,
+		Type:        itemcatalog.ItemTypeService,
+		ActiveOnly:  true,
+		Limit:       10,
+		Offset:      0,
 	}
 	var listBytes []byte
 	_ = json.Encode(&listArgs, &listBytes)
