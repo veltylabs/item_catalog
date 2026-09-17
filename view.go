@@ -26,7 +26,7 @@ func (s *Specialty) Item() view.Item {
 // the app decides which renderer draws it.
 func NewView(caller router.Caller) view.Presenter {
 	b := view.NewCallerLister(caller,
-		view.Ops{List: OpListItems, Save: OpUpsertItem, Delete: OpDeleteItem},
+		view.Ops{Module: ModelName, List: OpListItems, Save: OpUpsertItem, Delete: OpDeleteItem},
 		func() model.ModelSlice { return &CatalogItemList{} })
 	return view.New(b, &CatalogItem{}, view.WithTitle(titleCatalog))
 }
@@ -34,7 +34,7 @@ func NewView(caller router.Caller) view.Presenter {
 // NewSpecialtyView builds the specialty Presenter.
 func NewSpecialtyView(caller router.Caller) view.Presenter {
 	b := view.NewCallerLister(caller,
-		view.Ops{List: OpListSpecialties, Save: OpUpsertSpecialty, Delete: OpDeleteSpecialty},
+		view.Ops{Module: ModelName, List: OpListSpecialties, Save: OpUpsertSpecialty, Delete: OpDeleteSpecialty},
 		func() model.ModelSlice { return &SpecialtyList{} })
 	return view.New(b, &Specialty{}, view.WithTitle(titleSpecialties))
 }

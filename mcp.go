@@ -451,7 +451,13 @@ func (m *Module) DeleteAgreement(tenantId, id string) error {
 	return nil
 }
 
-func (m *Module) ModelName() string { return "item_catalog" }
+// ModelName is this module's identity: mcp.HarvestOps qualifies every op
+// below as "item_catalog.<name>" on the wire, and view.go's two NewXView
+// constructors pass this same constant as view.Ops.Module so the client
+// composes the identical qualified name.
+const ModelName = "item_catalog"
+
+func (m *Module) ModelName() string { return ModelName }
 
 func (m *Module) MountOperations(reg router.OperationRegistry) {
 	reg.Operation(OpListSpecialties, m.opListSpecialties).Requires("specialty", model.Read).Accepts(&ListSpecialtiesArgs{})
