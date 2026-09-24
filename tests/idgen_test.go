@@ -2,7 +2,7 @@ package tests
 
 import "webtyp.com/fmt"
 
-// testIDGen is the composition-root double for model.IDGenerator — mjosefa-cms
+// testIDGen is the test double for model.IDGenerator — tests
 // never constructs its own generator (same rule as form.New and crudview.New),
 // so every test injects one instead of passing nil.
 type testIDGen struct{ n int }

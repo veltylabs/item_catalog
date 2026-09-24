@@ -1,6 +1,6 @@
 //go:build !wasm
 
-package item_catalog
+package ui
 
 import (
 	"webtyp.com/svg"

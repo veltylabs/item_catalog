@@ -1,4 +1,4 @@
-package item_catalog
+package ui
 
 import (
 	"webtyp.com/router"

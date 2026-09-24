@@ -1,4 +1,4 @@
-package item_catalog
+package ui
 
 // ID is this module's identity: RBAC resource prefix on the server, nav
 // route on the client. "catalog_item", not "item_catalog" — the wire-facing

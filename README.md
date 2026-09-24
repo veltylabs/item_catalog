@@ -60,6 +60,14 @@ item, _ := module.CreateItem(itemcatalog.CatalogItem{
 | `upsert_agreement` | Create or update agreement |
 | `delete_agreement` | Delete agreement |
 
+## View and demo
+
+This module carries its own UI component (`ui/`), seed data (`seed/`), and runnable in-browser demo (`web/`).
+
+- **`ui/`**: Exports `ID` (`catalog_item`), `Label` (`Catálogo`), and `Browser(caller, ids, tenantID)`.
+- **`seed/`**: Exports `seed.Load(module, tenantID)`, populating 3 canonical specialties and 1 service item in each.
+- **`web/`**: Runnable WASM demo. Run `webtyp` at the repository root to open the demo — in-browser, in-memory, no login.
+
 ## Key Files
 | File | Purpose |
 |------|---------|
@@ -67,4 +75,7 @@ item, _ := module.CreateItem(itemcatalog.CatalogItem{
 | `mcp.go` | Core logic and transport operations |
 | `migration.go` | SKU prefix to specialty migration |
 | `model_orm.go` | Generated ORM helpers |
+| `ui/` | Module view presenter and components |
+| `seed/` | Demo seed data loader |
+| `web/` | WASM in-browser demo entrypoint |
 | `tests/` | Functional and unit tests |
