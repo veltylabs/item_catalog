@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	itemcatalog "github.com/veltylabs/item_catalog"
-	"github.com/veltylabs/mjosefa-cms/modules/item_catalog"
+	"github.com/veltylabs/item_catalog/ui"
 	"webtyp.com/components/decktabs"
 	"webtyp.com/dom"
 	"webtyp.com/json"
@@ -50,9 +50,9 @@ func TestWASM_ItemCatalog_View(t *testing.T) {
 		},
 	}
 
-	m, err := item_catalog.Browser(mock, &testIDGen{}, "")
+	m, err := ui.Browser(mock, &testIDGen{}, "")
 	if err != nil {
-		t.Fatalf("item_catalog.Browser: %v", err)
+		t.Fatalf("ui.Browser: %v", err)
 	}
 
 	cv := itemsPanel(t, m.View())
@@ -106,9 +106,9 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 		},
 	}
 
-	m, err := item_catalog.Browser(mock, &testIDGen{}, "")
+	m, err := ui.Browser(mock, &testIDGen{}, "")
 	if err != nil {
-		t.Fatalf("item_catalog.Browser: %v", err)
+		t.Fatalf("ui.Browser: %v", err)
 	}
 
 	cv := itemsPanel(t, m.View())
@@ -164,9 +164,9 @@ func TestWASM_ItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
 		},
 	}
 
-	m, err := item_catalog.Browser(mock, &testIDGen{}, "")
+	m, err := ui.Browser(mock, &testIDGen{}, "")
 	if err != nil {
-		t.Fatalf("item_catalog.Browser: %v", err)
+		t.Fatalf("ui.Browser: %v", err)
 	}
 	cv := itemsPanel(t, m.View())
 	cv.Init(nil)

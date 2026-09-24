@@ -1,4 +1,4 @@
-package item_catalog
+package ui
 
 import (
 	itemcatalog "github.com/veltylabs/item_catalog"

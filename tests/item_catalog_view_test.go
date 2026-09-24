@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	itemcatalog "github.com/veltylabs/item_catalog"
-	"github.com/veltylabs/mjosefa-cms/modules/item_catalog"
+	"github.com/veltylabs/item_catalog/ui"
 	"webtyp.com/components/decktabs"
 	"webtyp.com/json"
 	"webtyp.com/layout/crudview"
@@ -13,9 +13,9 @@ import (
 
 func TestView_Creation(t *testing.T) {
 	mock := &mockCaller{}
-	m, err := item_catalog.Browser(mock, &testIDGen{}, "")
+	m, err := ui.Browser(mock, &testIDGen{}, "")
 	if err != nil {
-		t.Fatalf("item_catalog.Browser: %v", err)
+		t.Fatalf("ui.Browser: %v", err)
 	}
 
 	if m.ModelName() != "catalog_item" {
@@ -44,9 +44,9 @@ func TestView_LoadList(t *testing.T) {
 		},
 	}
 
-	m, err := item_catalog.Browser(mock, &testIDGen{}, "")
+	m, err := ui.Browser(mock, &testIDGen{}, "")
 	if err != nil {
-		t.Fatalf("item_catalog.Browser: %v", err)
+		t.Fatalf("ui.Browser: %v", err)
 	}
 
 	tabs, ok := m.View().(*decktabs.DeckTabs)

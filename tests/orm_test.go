@@ -74,8 +74,6 @@ func TestORMBoilerplate(t *testing.T) {
 		_ = m.Validate(0)
 
 		l := &itemcatalog.SpecialtyList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -97,8 +95,6 @@ func TestORMBoilerplate(t *testing.T) {
 		_ = m.SchemaExt()
 
 		l := &itemcatalog.CatalogItemList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -120,8 +116,6 @@ func TestORMBoilerplate(t *testing.T) {
 		_ = m.SchemaExt()
 
 		l := &itemcatalog.AgreementList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -141,8 +135,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.ItemFilterList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -162,8 +154,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.ListItemsArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -183,8 +173,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.GetItemArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -204,8 +192,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.FindBySKUArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -225,8 +211,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.DeactivateItemArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -246,8 +230,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.DeleteItemArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -267,8 +249,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.ListAgreementsArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -288,8 +268,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.DeleteAgreementArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -309,8 +287,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.ListSpecialtiesArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -330,8 +306,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.GetSpecialtyArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
@@ -351,8 +325,6 @@ func TestORMBoilerplate(t *testing.T) {
 		m.DecodeFields(fr)
 
 		l := &itemcatalog.DeleteSpecialtyArgsList{}
-		_ = l.Schema()
-		_ = l.Pointers()
 		_ = l.Len()
 		_ = l.IsNil()
 		_ = l.Append()
