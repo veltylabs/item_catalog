@@ -29,7 +29,7 @@ func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
 			}
 		}
 		if !found {
-			return data, fmt.Err("canonical specialty not found for slug: %s", slug)
+			return data, fmt.Err("seed: canonical specialty not found", slug)
 		}
 
 		spec, err := m.UpsertSpecialty(itemcatalog.Specialty{
@@ -41,7 +41,7 @@ func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
 			IsPublished: true,
 		})
 		if err != nil {
-			return data, fmt.Err("failed to upsert specialty %s: %w", cs.Slug, err)
+			return data, fmt.Err("seed: UpsertSpecialty", cs.Slug, err)
 		}
 		data.Specialties = append(data.Specialties, spec)
 	}
@@ -70,7 +70,7 @@ func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
 			}
 		}
 		if !found {
-			return data, fmt.Err("specialty ID not found for slug: %s", specDef.slug)
+			return data, fmt.Err("seed: specialty id not found", specDef.slug)
 		}
 
 		createdItem, err := m.CreateItem(itemcatalog.CatalogItem{
@@ -84,7 +84,7 @@ func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
 			IsActive:    true,
 		})
 		if err != nil {
-			return data, fmt.Err("failed to create catalog item %s: %w", specDef.sku, err)
+			return data, fmt.Err("seed: CreateItem", specDef.sku, err)
 		}
 		data.Items = append(data.Items, createdItem)
 	}
