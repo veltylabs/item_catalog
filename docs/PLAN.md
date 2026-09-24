@@ -2,6 +2,8 @@
 PLAN: "feat(ui): el Catálogo (servicios + especialidades con picker obligatorio), su semilla y su demo viven en el módulo"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 10644816879426567966
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: agents-workflow.
