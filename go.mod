@@ -3,7 +3,7 @@ module github.com/veltylabs/item_catalog
 go 1.25.2
 
 require (
-	webtyp.com/components v0.7.0
+	webtyp.com/components v0.7.6
 	webtyp.com/ddl v0.0.15
 	webtyp.com/dom v0.13.17
 	webtyp.com/events v0.0.5
