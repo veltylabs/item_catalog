@@ -58,6 +58,7 @@ func TestView_LoadList(t *testing.T) {
 		t.Fatalf("expected tab 0 (Servicios) to be a *crudview.CrudView, got %T", tabs.Items[0].Panel)
 	}
 	cv.Init(nil)
+	m.Activate()
 
 	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpListItems {
 		t.Errorf("expected last op %q, got %q", itemcatalog.ModelName+"."+itemcatalog.OpListItems, mock.lastOp)

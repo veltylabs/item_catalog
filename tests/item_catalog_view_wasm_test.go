@@ -57,6 +57,7 @@ func TestWASM_ItemCatalog_View(t *testing.T) {
 
 	cv := itemsPanel(t, m.View())
 	cv.Init(nil)
+	m.Activate()
 
 	// Verifica que list_catalog_items se llamó en Init
 	found := false
@@ -113,6 +114,7 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 
 	cv := itemsPanel(t, m.View())
 	cv.Init(nil)
+	m.Activate()
 
 	// Seleccionar la tarjeta debe llenar el formulario desde el registro
 	// cacheado (byID). Los selectAction/saveAction/deleteAction propios de
