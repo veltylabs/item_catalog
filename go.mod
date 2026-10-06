@@ -1,11 +1,11 @@
 module github.com/veltylabs/item_catalog
 
-go 1.25.2
+go 1.26.8
 
 require (
 	webtyp.com/components v0.8.7
 	webtyp.com/ddl v0.0.15
-	webtyp.com/dom v0.13.20
+	webtyp.com/dom v0.13.21
 	webtyp.com/events v0.0.5
 	webtyp.com/fmt v1.0.0
 	webtyp.com/form v0.4.22
@@ -27,6 +27,7 @@ require (
 	webtyp.com/color v0.1.2 // indirect
 	webtyp.com/css v0.4.28 // indirect
 	webtyp.com/date v0.0.7 // indirect
+	webtyp.com/escape v0.1.0 // indirect
 	webtyp.com/font v0.0.5 // indirect
 	webtyp.com/icons v0.0.7 // indirect
 	webtyp.com/widget v0.6.36 // indirect
