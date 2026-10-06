@@ -8,7 +8,7 @@ require (
 	webtyp.com/dom v0.13.21
 	webtyp.com/events v0.0.5
 	webtyp.com/fmt v1.0.0
-	webtyp.com/form v0.4.23
+	webtyp.com/form v0.4.24
 	webtyp.com/html v0.0.24
 	webtyp.com/input v0.0.13
 	webtyp.com/json v0.5.29
