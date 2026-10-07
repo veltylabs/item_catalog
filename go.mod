@@ -3,16 +3,16 @@ module github.com/veltylabs/item_catalog
 go 1.26.8
 
 require (
-	webtyp.com/components v0.8.8
+	webtyp.com/components v0.8.12
 	webtyp.com/ddl v0.0.15
 	webtyp.com/dom v0.13.21
 	webtyp.com/events v0.0.5
 	webtyp.com/fmt v1.0.0
 	webtyp.com/form v0.4.24
 	webtyp.com/html v0.0.24
-	webtyp.com/input v0.0.13
+	webtyp.com/input v0.0.16
 	webtyp.com/json v0.5.29
-	webtyp.com/layout v0.3.28
+	webtyp.com/layout v0.3.29
 	webtyp.com/model v0.2.2
 	webtyp.com/orm v0.12.1
 	webtyp.com/router v0.3.2
@@ -20,7 +20,7 @@ require (
 	webtyp.com/svg v0.3.14
 	webtyp.com/time v0.5.7
 	webtyp.com/unixid v0.2.28
-	webtyp.com/view v0.6.10
+	webtyp.com/view v0.6.26
 )
 
 require (
