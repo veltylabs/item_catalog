@@ -9,13 +9,18 @@ import (
 	"webtyp.com/time"
 )
 
-var ErrNotFound = fmt.Err("item not found")
-var ErrAlreadyExists = fmt.Err("item already exists")
+type domainError string
 
-var ErrSpecialtyNotFound = fmt.Err("specialty not found")
-var ErrSpecialtyInUse = fmt.Err("specialty in use")
-var ErrSpecialtyPrefixExists = fmt.Err("specialty prefix already exists")
-var ErrSpecialtySlugExists = fmt.Err("specialty slug already exists")
+func (e domainError) Error() string { return string(e) }
+
+const (
+	ErrNotFound              domainError = "item not found"
+	ErrAlreadyExists         domainError = "item already exists"
+	ErrSpecialtyNotFound     domainError = "specialty not found"
+	ErrSpecialtyInUse        domainError = "specialty in use"
+	ErrSpecialtyPrefixExists domainError = "specialty prefix already exists"
+	ErrSpecialtySlugExists   domainError = "specialty slug already exists"
+)
 
 const (
 	OpListSpecialties = "list_specialties"
@@ -82,7 +87,7 @@ func (m *Module) GetSpecialty(tenantId, id string) (Specialty, error) {
 	qb := m.db.Query(&spec).Where(Specialty_.Id).Eq(id).Where(Specialty_.TenantId).Eq(tenantId)
 	_, err := ReadOneSpecialty(qb, &spec)
 	if err != nil {
-		if err == orm.ErrNotFound {
+		if orm.IsNotFound(err) {
 			return Specialty{}, ErrSpecialtyNotFound
 		}
 		return Specialty{}, err
@@ -95,7 +100,7 @@ func (m *Module) GetSpecialtyByPrefix(tenantId, prefix string) (Specialty, error
 	qb := m.db.Query(&spec).Where(Specialty_.Prefix).Eq(prefix).Where(Specialty_.TenantId).Eq(tenantId)
 	_, err := ReadOneSpecialty(qb, &spec)
 	if err != nil {
-		if err == orm.ErrNotFound {
+		if orm.IsNotFound(err) {
 			return Specialty{}, ErrSpecialtyNotFound
 		}
 		return Specialty{}, err
@@ -108,7 +113,7 @@ func (m *Module) GetSpecialtyBySlug(tenantId, slug string) (Specialty, error) {
 	qb := m.db.Query(&spec).Where(Specialty_.Slug).Eq(slug).Where(Specialty_.TenantId).Eq(tenantId)
 	_, err := ReadOneSpecialty(qb, &spec)
 	if err != nil {
-		if err == orm.ErrNotFound {
+		if orm.IsNotFound(err) {
 			return Specialty{}, ErrSpecialtyNotFound
 		}
 		return Specialty{}, err
@@ -150,7 +155,7 @@ func (m *Module) UpsertSpecialty(spec Specialty) (Specialty, error) {
 		if existingPrefix.Id != spec.Id {
 			return Specialty{}, ErrSpecialtyPrefixExists
 		}
-	} else if err != ErrSpecialtyNotFound {
+	} else if e, ok := err.(domainError); !ok || e != ErrSpecialtyNotFound {
 		return Specialty{}, err
 	}
 
@@ -160,7 +165,7 @@ func (m *Module) UpsertSpecialty(spec Specialty) (Specialty, error) {
 		if existingSlug.Id != spec.Id {
 			return Specialty{}, ErrSpecialtySlugExists
 		}
-	} else if err != ErrSpecialtyNotFound {
+	} else if e, ok := err.(domainError); !ok || e != ErrSpecialtyNotFound {
 		return Specialty{}, err
 	}
 
@@ -222,7 +227,7 @@ func (m *Module) GetItem(tenantId, id string) (CatalogItem, error) {
 	qb := m.db.Query(&item).Where(CatalogItem_.Id).Eq(id).Where(CatalogItem_.TenantId).Eq(tenantId)
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
-		if err == orm.ErrNotFound {
+		if orm.IsNotFound(err) {
 			return CatalogItem{}, ErrNotFound
 		}
 		return CatalogItem{}, err
@@ -235,7 +240,7 @@ func (m *Module) FindBySKU(tenantId, sku string) (CatalogItem, error) {
 	qb := m.db.Query(&item).Where(CatalogItem_.Sku).Eq(sku).Where(CatalogItem_.TenantId).Eq(tenantId)
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
-		if err == orm.ErrNotFound {
+		if orm.IsNotFound(err) {
 			return CatalogItem{}, ErrNotFound
 		}
 		return CatalogItem{}, err
@@ -289,7 +294,7 @@ func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
 		if existing.Id != "" {
 			return CatalogItem{}, ErrAlreadyExists
 		}
-	} else if err != ErrNotFound {
+	} else if e, ok := err.(domainError); !ok || e != ErrNotFound {
 		return CatalogItem{}, err
 	}
 
@@ -359,7 +364,7 @@ func (m *Module) DeleteItem(tenantId, id string) error {
 func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
 	item, err := m.GetItem(tenantId, serviceId)
 	if err != nil {
-		if err == ErrNotFound {
+		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			return false, nil
 		}
 		return false, err
@@ -389,7 +394,7 @@ func (m *Module) GetAgreement(tenantId, id string) (Agreement, error) {
 	qb := m.db.Query(&a).Where(Agreement_.Id).Eq(id).Where(Agreement_.TenantId).Eq(tenantId)
 	_, err := ReadOneAgreement(qb, &a)
 	if err != nil {
-		if err == orm.ErrNotFound {
+		if orm.IsNotFound(err) {
 			return Agreement{}, ErrNotFound
 		}
 		return Agreement{}, err
@@ -509,7 +514,7 @@ func (m *Module) opGetSpecialty(ctx router.Context) {
 	}
 	spec, err := m.GetSpecialty(args.TenantId, args.Id)
 	if err != nil {
-		if err == ErrSpecialtyNotFound || err == ErrNotFound {
+		if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -531,9 +536,9 @@ func (m *Module) opUpsertSpecialty(ctx router.Context) {
 	if err != nil {
 		if _, ok := err.(ValidationError); ok {
 			ctx.WriteStatus(400)
-		} else if err == ErrSpecialtyPrefixExists || err == ErrSpecialtySlugExists {
+		} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyPrefixExists || e == ErrSpecialtySlugExists) {
 			ctx.WriteStatus(409)
-		} else if err == ErrSpecialtyNotFound || err == ErrNotFound {
+		} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -552,9 +557,9 @@ func (m *Module) opDeleteSpecialty(ctx router.Context) {
 		return
 	}
 	if err := m.DeleteSpecialty(args.TenantId, args.Id); err != nil {
-		if err == ErrSpecialtyNotFound || err == ErrNotFound {
+		if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
 			ctx.WriteStatus(404)
-		} else if err == ErrSpecialtyInUse {
+		} else if e, ok := err.(domainError); ok && e == ErrSpecialtyInUse {
 			ctx.WriteStatus(400)
 		} else {
 			ctx.WriteStatus(500)
@@ -593,7 +598,7 @@ func (m *Module) opGetItem(ctx router.Context) {
 	}
 	item, err := m.GetItem(args.TenantId, args.Id)
 	if err != nil {
-		if err == ErrNotFound {
+		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -613,7 +618,7 @@ func (m *Module) opFindItemBySKU(ctx router.Context) {
 	}
 	item, err := m.FindBySKU(args.TenantId, args.Sku)
 	if err != nil {
-		if err == ErrNotFound {
+		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -635,7 +640,7 @@ func (m *Module) opCreateItem(ctx router.Context) {
 	if err != nil {
 		if _, ok := err.(ValidationError); ok {
 			ctx.WriteStatus(400)
-		} else if err == ErrAlreadyExists {
+		} else if e, ok := err.(domainError); ok && e == ErrAlreadyExists {
 			ctx.WriteStatus(409)
 		} else {
 			ctx.WriteStatus(500)
@@ -657,7 +662,7 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 	if err != nil {
 		if _, ok := err.(ValidationError); ok {
 			ctx.WriteStatus(400)
-		} else if err == ErrNotFound {
+		} else if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -685,9 +690,9 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 	if err != nil {
 		if _, ok := err.(ValidationError); ok {
 			ctx.WriteStatus(400)
-		} else if err == ErrAlreadyExists {
+		} else if e, ok := err.(domainError); ok && e == ErrAlreadyExists {
 			ctx.WriteStatus(409)
-		} else if err == ErrNotFound {
+		} else if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -706,7 +711,7 @@ func (m *Module) opDeactivateItem(ctx router.Context) {
 		return
 	}
 	if err := m.DeactivateItem(args.TenantId, args.Id); err != nil {
-		if err == ErrNotFound {
+		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -723,7 +728,7 @@ func (m *Module) opDeleteItem(ctx router.Context) {
 		return
 	}
 	if err := m.DeleteItem(args.TenantId, args.Id); err != nil {
-		if err == ErrNotFound {
+		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -763,7 +768,7 @@ func (m *Module) opUpsertAgreement(ctx router.Context) {
 	if err != nil {
 		if _, ok := err.(ValidationError); ok {
 			ctx.WriteStatus(400)
-		} else if err == ErrNotFound {
+		} else if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)
@@ -782,7 +787,7 @@ func (m *Module) opDeleteAgreement(ctx router.Context) {
 		return
 	}
 	if err := m.DeleteAgreement(args.TenantId, args.Id); err != nil {
-		if err == ErrNotFound {
+		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			ctx.WriteStatus(404)
 		} else {
 			ctx.WriteStatus(500)

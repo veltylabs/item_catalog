@@ -8,55 +8,83 @@ import (
 )
 
 type Specialty struct {
-	Id string
-	TenantId string
-	Prefix string
-	Slug string
-	Name string
+	Id          string
+	TenantId    string
+	Prefix      string
+	Slug        string
+	Name        string
 	Description string
-	Position int64
+	Position    int64
 	IsPublished bool
-	UpdatedAt int64
+	UpdatedAt   int64
 }
 
 func (m *Specialty) ModelName() string { return "specialty" }
 
 func (m *Specialty) Schema() []model.Field { return SpecialtyModel.Fields }
 
-func (m *Specialty) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.Prefix, &m.Slug, &m.Name, &m.Description, &m.Position, &m.IsPublished, &m.UpdatedAt} }
+func (m *Specialty) Pointers() []any {
+	return []any{&m.Id, &m.TenantId, &m.Prefix, &m.Slug, &m.Name, &m.Description, &m.Position, &m.IsPublished, &m.UpdatedAt}
+}
 
 func (m *Specialty) IsNil() bool { return m == nil }
 
 func (m *Specialty) EncodeFields(w model.FieldWriter) {
-	if m.Id != "" { w.String("id", m.Id) }
+	if m.Id != "" {
+		w.String("id", m.Id)
+	}
 	w.String("tenant_id", m.TenantId)
 	w.String("prefix", m.Prefix)
 	w.String("slug", m.Slug)
 	w.String("name", m.Name)
-	if m.Description != "" { w.String("description", m.Description) }
-	if m.Position != 0 { w.Int("position", m.Position) }
+	if m.Description != "" {
+		w.String("description", m.Description)
+	}
+	if m.Position != 0 {
+		w.Int("position", m.Position)
+	}
 	w.Bool("is_published", m.IsPublished)
-	if m.UpdatedAt != 0 { w.Int("updated_at", m.UpdatedAt) }
+	if m.UpdatedAt != 0 {
+		w.Int("updated_at", m.UpdatedAt)
+	}
 }
 
 func (m *Specialty) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("id"); ok { m.Id = v }
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("prefix"); ok { m.Prefix = v }
-	if v, ok := r.String("slug"); ok { m.Slug = v }
-	if v, ok := r.String("name"); ok { m.Name = v }
-	if v, ok := r.String("description"); ok { m.Description = v }
-	if v, ok := r.Int("position"); ok { m.Position = v }
-	if v, ok := r.Bool("is_published"); ok { m.IsPublished = v }
-	if v, ok := r.Int("updated_at"); ok { m.UpdatedAt = v }
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("prefix"); ok {
+		m.Prefix = v
+	}
+	if v, ok := r.String("slug"); ok {
+		m.Slug = v
+	}
+	if v, ok := r.String("name"); ok {
+		m.Name = v
+	}
+	if v, ok := r.String("description"); ok {
+		m.Description = v
+	}
+	if v, ok := r.Int("position"); ok {
+		m.Position = v
+	}
+	if v, ok := r.Bool("is_published"); ok {
+		m.IsPublished = v
+	}
+	if v, ok := r.Int("updated_at"); ok {
+		m.UpdatedAt = v
+	}
 }
 
 type SpecialtyList []*Specialty
 
-func (s *SpecialtyList) Len() int             { return len(*s) }
-func (s *SpecialtyList) At(i int) model.Fielder { return (*s)[i] }
-func (s *SpecialtyList) Append() model.Fielder  { v := &Specialty{}; *s = append(*s, v); return v }
-func (s *SpecialtyList) IsNil() bool          { return s == nil }
+func (s *SpecialtyList) Len() int                         { return len(*s) }
+func (s *SpecialtyList) At(i int) model.Fielder           { return (*s)[i] }
+func (s *SpecialtyList) Append() model.Fielder            { v := &Specialty{}; *s = append(*s, v); return v }
+func (s *SpecialtyList) IsNil() bool                      { return s == nil }
 func (s *SpecialtyList) EncodeFields(_ model.FieldWriter) {}
 func (s *SpecialtyList) DecodeFields(_ model.FieldReader) {}
 
@@ -65,25 +93,25 @@ func (m *Specialty) Validate(action byte) error {
 }
 
 var Specialty_ = struct {
-	Id string
-	TenantId string
-	Prefix string
-	Slug string
-	Name string
+	Id          string
+	TenantId    string
+	Prefix      string
+	Slug        string
+	Name        string
 	Description string
-	Position string
+	Position    string
 	IsPublished string
-	UpdatedAt string
+	UpdatedAt   string
 }{
-	Id: "id",
-	TenantId: "tenant_id",
-	Prefix: "prefix",
-	Slug: "slug",
-	Name: "name",
+	Id:          "id",
+	TenantId:    "tenant_id",
+	Prefix:      "prefix",
+	Slug:        "slug",
+	Name:        "name",
 	Description: "description",
-	Position: "position",
+	Position:    "position",
 	IsPublished: "is_published",
-	UpdatedAt: "updated_at",
+	UpdatedAt:   "updated_at",
 }
 
 func ReadOneSpecialty(qb *orm.QB, model *Specialty) (*Specialty, error) {
@@ -104,61 +132,91 @@ func ReadAllSpecialty(qb *orm.QB) (SpecialtyList, error) {
 }
 
 type CatalogItem struct {
-	Id string
-	TenantId string
+	Id          string
+	TenantId    string
 	SpecialtyId string
-	Sku string
-	Name string
+	Sku         string
+	Name        string
 	Description string
-	Type string
-	Price float64
-	Currency string
-	IsActive bool
-	UpdatedAt int64
+	Type        string
+	Price       float64
+	Currency    string
+	IsActive    bool
+	UpdatedAt   int64
 }
 
 func (m *CatalogItem) ModelName() string { return "catalog_item" }
 
 func (m *CatalogItem) Schema() []model.Field { return CatalogItemModel.Fields }
 
-func (m *CatalogItem) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.SpecialtyId, &m.Sku, &m.Name, &m.Description, &m.Type, &m.Price, &m.Currency, &m.IsActive, &m.UpdatedAt} }
+func (m *CatalogItem) Pointers() []any {
+	return []any{&m.Id, &m.TenantId, &m.SpecialtyId, &m.Sku, &m.Name, &m.Description, &m.Type, &m.Price, &m.Currency, &m.IsActive, &m.UpdatedAt}
+}
 
 func (m *CatalogItem) IsNil() bool { return m == nil }
 
 func (m *CatalogItem) EncodeFields(w model.FieldWriter) {
-	if m.Id != "" { w.String("id", m.Id) }
+	if m.Id != "" {
+		w.String("id", m.Id)
+	}
 	w.String("tenant_id", m.TenantId)
 	w.String("specialty_id", m.SpecialtyId)
 	w.String("sku", m.Sku)
 	w.String("name", m.Name)
-	if m.Description != "" { w.String("description", m.Description) }
+	if m.Description != "" {
+		w.String("description", m.Description)
+	}
 	w.String("type", m.Type)
 	w.Float("price", m.Price)
 	w.String("currency", m.Currency)
 	w.Bool("is_active", m.IsActive)
-	if m.UpdatedAt != 0 { w.Int("updated_at", m.UpdatedAt) }
+	if m.UpdatedAt != 0 {
+		w.Int("updated_at", m.UpdatedAt)
+	}
 }
 
 func (m *CatalogItem) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("id"); ok { m.Id = v }
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("specialty_id"); ok { m.SpecialtyId = v }
-	if v, ok := r.String("sku"); ok { m.Sku = v }
-	if v, ok := r.String("name"); ok { m.Name = v }
-	if v, ok := r.String("description"); ok { m.Description = v }
-	if v, ok := r.String("type"); ok { m.Type = v }
-	if v, ok := r.Float("price"); ok { m.Price = v }
-	if v, ok := r.String("currency"); ok { m.Currency = v }
-	if v, ok := r.Bool("is_active"); ok { m.IsActive = v }
-	if v, ok := r.Int("updated_at"); ok { m.UpdatedAt = v }
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("specialty_id"); ok {
+		m.SpecialtyId = v
+	}
+	if v, ok := r.String("sku"); ok {
+		m.Sku = v
+	}
+	if v, ok := r.String("name"); ok {
+		m.Name = v
+	}
+	if v, ok := r.String("description"); ok {
+		m.Description = v
+	}
+	if v, ok := r.String("type"); ok {
+		m.Type = v
+	}
+	if v, ok := r.Float("price"); ok {
+		m.Price = v
+	}
+	if v, ok := r.String("currency"); ok {
+		m.Currency = v
+	}
+	if v, ok := r.Bool("is_active"); ok {
+		m.IsActive = v
+	}
+	if v, ok := r.Int("updated_at"); ok {
+		m.UpdatedAt = v
+	}
 }
 
 type CatalogItemList []*CatalogItem
 
-func (s *CatalogItemList) Len() int             { return len(*s) }
-func (s *CatalogItemList) At(i int) model.Fielder { return (*s)[i] }
-func (s *CatalogItemList) Append() model.Fielder  { v := &CatalogItem{}; *s = append(*s, v); return v }
-func (s *CatalogItemList) IsNil() bool          { return s == nil }
+func (s *CatalogItemList) Len() int                         { return len(*s) }
+func (s *CatalogItemList) At(i int) model.Fielder           { return (*s)[i] }
+func (s *CatalogItemList) Append() model.Fielder            { v := &CatalogItem{}; *s = append(*s, v); return v }
+func (s *CatalogItemList) IsNil() bool                      { return s == nil }
 func (s *CatalogItemList) EncodeFields(_ model.FieldWriter) {}
 func (s *CatalogItemList) DecodeFields(_ model.FieldReader) {}
 
@@ -167,29 +225,29 @@ func (m *CatalogItem) Validate(action byte) error {
 }
 
 var CatalogItem_ = struct {
-	Id string
-	TenantId string
+	Id          string
+	TenantId    string
 	SpecialtyId string
-	Sku string
-	Name string
+	Sku         string
+	Name        string
 	Description string
-	Type string
-	Price string
-	Currency string
-	IsActive string
-	UpdatedAt string
+	Type        string
+	Price       string
+	Currency    string
+	IsActive    string
+	UpdatedAt   string
 }{
-	Id: "id",
-	TenantId: "tenant_id",
+	Id:          "id",
+	TenantId:    "tenant_id",
 	SpecialtyId: "specialty_id",
-	Sku: "sku",
-	Name: "name",
+	Sku:         "sku",
+	Name:        "name",
 	Description: "description",
-	Type: "type",
-	Price: "price",
-	Currency: "currency",
-	IsActive: "is_active",
-	UpdatedAt: "updated_at",
+	Type:        "type",
+	Price:       "price",
+	Currency:    "currency",
+	IsActive:    "is_active",
+	UpdatedAt:   "updated_at",
 }
 
 func ReadOneCatalogItem(qb *orm.QB, model *CatalogItem) (*CatalogItem, error) {
@@ -216,52 +274,78 @@ func (m *CatalogItem) SchemaExt() []model.FieldExt {
 }
 
 type Agreement struct {
-	Id string
-	TenantId string
+	Id            string
+	TenantId      string
 	CatalogItemId string
-	Insurer string
-	Code string
-	Price float64
-	IsActive bool
-	UpdatedAt int64
+	Insurer       string
+	Code          string
+	Price         float64
+	IsActive      bool
+	UpdatedAt     int64
 }
 
 func (m *Agreement) ModelName() string { return "catalog_agreement" }
 
 func (m *Agreement) Schema() []model.Field { return AgreementModel.Fields }
 
-func (m *Agreement) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.CatalogItemId, &m.Insurer, &m.Code, &m.Price, &m.IsActive, &m.UpdatedAt} }
+func (m *Agreement) Pointers() []any {
+	return []any{&m.Id, &m.TenantId, &m.CatalogItemId, &m.Insurer, &m.Code, &m.Price, &m.IsActive, &m.UpdatedAt}
+}
 
 func (m *Agreement) IsNil() bool { return m == nil }
 
 func (m *Agreement) EncodeFields(w model.FieldWriter) {
-	if m.Id != "" { w.String("id", m.Id) }
+	if m.Id != "" {
+		w.String("id", m.Id)
+	}
 	w.String("tenant_id", m.TenantId)
 	w.String("catalog_item_id", m.CatalogItemId)
 	w.String("insurer", m.Insurer)
-	if m.Code != "" { w.String("code", m.Code) }
-	if m.Price != 0 { w.Float("price", m.Price) }
+	if m.Code != "" {
+		w.String("code", m.Code)
+	}
+	if m.Price != 0 {
+		w.Float("price", m.Price)
+	}
 	w.Bool("is_active", m.IsActive)
-	if m.UpdatedAt != 0 { w.Int("updated_at", m.UpdatedAt) }
+	if m.UpdatedAt != 0 {
+		w.Int("updated_at", m.UpdatedAt)
+	}
 }
 
 func (m *Agreement) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("id"); ok { m.Id = v }
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("catalog_item_id"); ok { m.CatalogItemId = v }
-	if v, ok := r.String("insurer"); ok { m.Insurer = v }
-	if v, ok := r.String("code"); ok { m.Code = v }
-	if v, ok := r.Float("price"); ok { m.Price = v }
-	if v, ok := r.Bool("is_active"); ok { m.IsActive = v }
-	if v, ok := r.Int("updated_at"); ok { m.UpdatedAt = v }
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("catalog_item_id"); ok {
+		m.CatalogItemId = v
+	}
+	if v, ok := r.String("insurer"); ok {
+		m.Insurer = v
+	}
+	if v, ok := r.String("code"); ok {
+		m.Code = v
+	}
+	if v, ok := r.Float("price"); ok {
+		m.Price = v
+	}
+	if v, ok := r.Bool("is_active"); ok {
+		m.IsActive = v
+	}
+	if v, ok := r.Int("updated_at"); ok {
+		m.UpdatedAt = v
+	}
 }
 
 type AgreementList []*Agreement
 
-func (s *AgreementList) Len() int             { return len(*s) }
-func (s *AgreementList) At(i int) model.Fielder { return (*s)[i] }
-func (s *AgreementList) Append() model.Fielder  { v := &Agreement{}; *s = append(*s, v); return v }
-func (s *AgreementList) IsNil() bool          { return s == nil }
+func (s *AgreementList) Len() int                         { return len(*s) }
+func (s *AgreementList) At(i int) model.Fielder           { return (*s)[i] }
+func (s *AgreementList) Append() model.Fielder            { v := &Agreement{}; *s = append(*s, v); return v }
+func (s *AgreementList) IsNil() bool                      { return s == nil }
 func (s *AgreementList) EncodeFields(_ model.FieldWriter) {}
 func (s *AgreementList) DecodeFields(_ model.FieldReader) {}
 
@@ -270,23 +354,23 @@ func (m *Agreement) Validate(action byte) error {
 }
 
 var Agreement_ = struct {
-	Id string
-	TenantId string
+	Id            string
+	TenantId      string
 	CatalogItemId string
-	Insurer string
-	Code string
-	Price string
-	IsActive string
-	UpdatedAt string
+	Insurer       string
+	Code          string
+	Price         string
+	IsActive      string
+	UpdatedAt     string
 }{
-	Id: "id",
-	TenantId: "tenant_id",
+	Id:            "id",
+	TenantId:      "tenant_id",
 	CatalogItemId: "catalog_item_id",
-	Insurer: "insurer",
-	Code: "code",
-	Price: "price",
-	IsActive: "is_active",
-	UpdatedAt: "updated_at",
+	Insurer:       "insurer",
+	Code:          "code",
+	Price:         "price",
+	IsActive:      "is_active",
+	UpdatedAt:     "updated_at",
 }
 
 func ReadOneAgreement(qb *orm.QB, model *Agreement) (*Agreement, error) {
@@ -314,17 +398,19 @@ func (m *Agreement) SchemaExt() []model.FieldExt {
 
 type ItemFilter struct {
 	SpecialtyId string
-	Type string
-	ActiveOnly bool
-	Limit int64
-	Offset int64
+	Type        string
+	ActiveOnly  bool
+	Limit       int64
+	Offset      int64
 }
 
 func (m *ItemFilter) ModelName() string { return "item_filter" }
 
 func (m *ItemFilter) Schema() []model.Field { return ItemFilterModel.Fields }
 
-func (m *ItemFilter) Pointers() []any { return []any{&m.SpecialtyId, &m.Type, &m.ActiveOnly, &m.Limit, &m.Offset} }
+func (m *ItemFilter) Pointers() []any {
+	return []any{&m.SpecialtyId, &m.Type, &m.ActiveOnly, &m.Limit, &m.Offset}
+}
 
 func (m *ItemFilter) IsNil() bool { return m == nil }
 
@@ -337,36 +423,48 @@ func (m *ItemFilter) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *ItemFilter) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("specialty_id"); ok { m.SpecialtyId = v }
-	if v, ok := r.String("type"); ok { m.Type = v }
-	if v, ok := r.Bool("active_only"); ok { m.ActiveOnly = v }
-	if v, ok := r.Int("limit"); ok { m.Limit = v }
-	if v, ok := r.Int("offset"); ok { m.Offset = v }
+	if v, ok := r.String("specialty_id"); ok {
+		m.SpecialtyId = v
+	}
+	if v, ok := r.String("type"); ok {
+		m.Type = v
+	}
+	if v, ok := r.Bool("active_only"); ok {
+		m.ActiveOnly = v
+	}
+	if v, ok := r.Int("limit"); ok {
+		m.Limit = v
+	}
+	if v, ok := r.Int("offset"); ok {
+		m.Offset = v
+	}
 }
 
 type ItemFilterList []*ItemFilter
 
-func (s *ItemFilterList) Len() int             { return len(*s) }
-func (s *ItemFilterList) At(i int) model.Fielder { return (*s)[i] }
-func (s *ItemFilterList) Append() model.Fielder  { v := &ItemFilter{}; *s = append(*s, v); return v }
-func (s *ItemFilterList) IsNil() bool          { return s == nil }
+func (s *ItemFilterList) Len() int                         { return len(*s) }
+func (s *ItemFilterList) At(i int) model.Fielder           { return (*s)[i] }
+func (s *ItemFilterList) Append() model.Fielder            { v := &ItemFilter{}; *s = append(*s, v); return v }
+func (s *ItemFilterList) IsNil() bool                      { return s == nil }
 func (s *ItemFilterList) EncodeFields(_ model.FieldWriter) {}
 func (s *ItemFilterList) DecodeFields(_ model.FieldReader) {}
 
 type ListItemsArgs struct {
-	TenantId string
+	TenantId    string
 	SpecialtyId string
-	Type string
-	ActiveOnly bool
-	Limit int64
-	Offset int64
+	Type        string
+	ActiveOnly  bool
+	Limit       int64
+	Offset      int64
 }
 
 func (m *ListItemsArgs) ModelName() string { return "list_items_args" }
 
 func (m *ListItemsArgs) Schema() []model.Field { return ListItemsArgsModel.Fields }
 
-func (m *ListItemsArgs) Pointers() []any { return []any{&m.TenantId, &m.SpecialtyId, &m.Type, &m.ActiveOnly, &m.Limit, &m.Offset} }
+func (m *ListItemsArgs) Pointers() []any {
+	return []any{&m.TenantId, &m.SpecialtyId, &m.Type, &m.ActiveOnly, &m.Limit, &m.Offset}
+}
 
 func (m *ListItemsArgs) IsNil() bool { return m == nil }
 
@@ -380,26 +478,42 @@ func (m *ListItemsArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *ListItemsArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("specialty_id"); ok { m.SpecialtyId = v }
-	if v, ok := r.String("type"); ok { m.Type = v }
-	if v, ok := r.Bool("active_only"); ok { m.ActiveOnly = v }
-	if v, ok := r.Int("limit"); ok { m.Limit = v }
-	if v, ok := r.Int("offset"); ok { m.Offset = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("specialty_id"); ok {
+		m.SpecialtyId = v
+	}
+	if v, ok := r.String("type"); ok {
+		m.Type = v
+	}
+	if v, ok := r.Bool("active_only"); ok {
+		m.ActiveOnly = v
+	}
+	if v, ok := r.Int("limit"); ok {
+		m.Limit = v
+	}
+	if v, ok := r.Int("offset"); ok {
+		m.Offset = v
+	}
 }
 
 type ListItemsArgsList []*ListItemsArgs
 
-func (s *ListItemsArgsList) Len() int             { return len(*s) }
+func (s *ListItemsArgsList) Len() int               { return len(*s) }
 func (s *ListItemsArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *ListItemsArgsList) Append() model.Fielder  { v := &ListItemsArgs{}; *s = append(*s, v); return v }
-func (s *ListItemsArgsList) IsNil() bool          { return s == nil }
+func (s *ListItemsArgsList) Append() model.Fielder {
+	v := &ListItemsArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *ListItemsArgsList) IsNil() bool                      { return s == nil }
 func (s *ListItemsArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *ListItemsArgsList) DecodeFields(_ model.FieldReader) {}
 
 type GetItemArgs struct {
 	TenantId string
-	Id string
+	Id       string
 }
 
 func (m *GetItemArgs) ModelName() string { return "get_item_args" }
@@ -416,22 +530,26 @@ func (m *GetItemArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *GetItemArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
 }
 
 type GetItemArgsList []*GetItemArgs
 
-func (s *GetItemArgsList) Len() int             { return len(*s) }
-func (s *GetItemArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *GetItemArgsList) Append() model.Fielder  { v := &GetItemArgs{}; *s = append(*s, v); return v }
-func (s *GetItemArgsList) IsNil() bool          { return s == nil }
+func (s *GetItemArgsList) Len() int                         { return len(*s) }
+func (s *GetItemArgsList) At(i int) model.Fielder           { return (*s)[i] }
+func (s *GetItemArgsList) Append() model.Fielder            { v := &GetItemArgs{}; *s = append(*s, v); return v }
+func (s *GetItemArgsList) IsNil() bool                      { return s == nil }
 func (s *GetItemArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *GetItemArgsList) DecodeFields(_ model.FieldReader) {}
 
 type FindBySKUArgs struct {
 	TenantId string
-	Sku string
+	Sku      string
 }
 
 func (m *FindBySKUArgs) ModelName() string { return "find_by_sku_args" }
@@ -448,22 +566,30 @@ func (m *FindBySKUArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *FindBySKUArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("sku"); ok { m.Sku = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("sku"); ok {
+		m.Sku = v
+	}
 }
 
 type FindBySKUArgsList []*FindBySKUArgs
 
-func (s *FindBySKUArgsList) Len() int             { return len(*s) }
+func (s *FindBySKUArgsList) Len() int               { return len(*s) }
 func (s *FindBySKUArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *FindBySKUArgsList) Append() model.Fielder  { v := &FindBySKUArgs{}; *s = append(*s, v); return v }
-func (s *FindBySKUArgsList) IsNil() bool          { return s == nil }
+func (s *FindBySKUArgsList) Append() model.Fielder {
+	v := &FindBySKUArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *FindBySKUArgsList) IsNil() bool                      { return s == nil }
 func (s *FindBySKUArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *FindBySKUArgsList) DecodeFields(_ model.FieldReader) {}
 
 type DeactivateItemArgs struct {
 	TenantId string
-	Id string
+	Id       string
 }
 
 func (m *DeactivateItemArgs) ModelName() string { return "deactivate_item_args" }
@@ -480,22 +606,30 @@ func (m *DeactivateItemArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *DeactivateItemArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
 }
 
 type DeactivateItemArgsList []*DeactivateItemArgs
 
-func (s *DeactivateItemArgsList) Len() int             { return len(*s) }
+func (s *DeactivateItemArgsList) Len() int               { return len(*s) }
 func (s *DeactivateItemArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *DeactivateItemArgsList) Append() model.Fielder  { v := &DeactivateItemArgs{}; *s = append(*s, v); return v }
-func (s *DeactivateItemArgsList) IsNil() bool          { return s == nil }
+func (s *DeactivateItemArgsList) Append() model.Fielder {
+	v := &DeactivateItemArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *DeactivateItemArgsList) IsNil() bool                      { return s == nil }
 func (s *DeactivateItemArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *DeactivateItemArgsList) DecodeFields(_ model.FieldReader) {}
 
 type DeleteItemArgs struct {
 	TenantId string
-	Id string
+	Id       string
 }
 
 func (m *DeleteItemArgs) ModelName() string { return "delete_item_args" }
@@ -512,21 +646,29 @@ func (m *DeleteItemArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *DeleteItemArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
 }
 
 type DeleteItemArgsList []*DeleteItemArgs
 
-func (s *DeleteItemArgsList) Len() int             { return len(*s) }
+func (s *DeleteItemArgsList) Len() int               { return len(*s) }
 func (s *DeleteItemArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *DeleteItemArgsList) Append() model.Fielder  { v := &DeleteItemArgs{}; *s = append(*s, v); return v }
-func (s *DeleteItemArgsList) IsNil() bool          { return s == nil }
+func (s *DeleteItemArgsList) Append() model.Fielder {
+	v := &DeleteItemArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *DeleteItemArgsList) IsNil() bool                      { return s == nil }
 func (s *DeleteItemArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *DeleteItemArgsList) DecodeFields(_ model.FieldReader) {}
 
 type ListAgreementsArgs struct {
-	TenantId string
+	TenantId      string
 	CatalogItemId string
 }
 
@@ -544,22 +686,30 @@ func (m *ListAgreementsArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *ListAgreementsArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("catalog_item_id"); ok { m.CatalogItemId = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("catalog_item_id"); ok {
+		m.CatalogItemId = v
+	}
 }
 
 type ListAgreementsArgsList []*ListAgreementsArgs
 
-func (s *ListAgreementsArgsList) Len() int             { return len(*s) }
+func (s *ListAgreementsArgsList) Len() int               { return len(*s) }
 func (s *ListAgreementsArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *ListAgreementsArgsList) Append() model.Fielder  { v := &ListAgreementsArgs{}; *s = append(*s, v); return v }
-func (s *ListAgreementsArgsList) IsNil() bool          { return s == nil }
+func (s *ListAgreementsArgsList) Append() model.Fielder {
+	v := &ListAgreementsArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *ListAgreementsArgsList) IsNil() bool                      { return s == nil }
 func (s *ListAgreementsArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *ListAgreementsArgsList) DecodeFields(_ model.FieldReader) {}
 
 type DeleteAgreementArgs struct {
 	TenantId string
-	Id string
+	Id       string
 }
 
 func (m *DeleteAgreementArgs) ModelName() string { return "delete_agreement_args" }
@@ -576,16 +726,24 @@ func (m *DeleteAgreementArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *DeleteAgreementArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
 }
 
 type DeleteAgreementArgsList []*DeleteAgreementArgs
 
-func (s *DeleteAgreementArgsList) Len() int             { return len(*s) }
+func (s *DeleteAgreementArgsList) Len() int               { return len(*s) }
 func (s *DeleteAgreementArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *DeleteAgreementArgsList) Append() model.Fielder  { v := &DeleteAgreementArgs{}; *s = append(*s, v); return v }
-func (s *DeleteAgreementArgsList) IsNil() bool          { return s == nil }
+func (s *DeleteAgreementArgsList) Append() model.Fielder {
+	v := &DeleteAgreementArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *DeleteAgreementArgsList) IsNil() bool                      { return s == nil }
 func (s *DeleteAgreementArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *DeleteAgreementArgsList) DecodeFields(_ model.FieldReader) {}
 
@@ -606,21 +764,27 @@ func (m *ListSpecialtiesArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *ListSpecialtiesArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
 }
 
 type ListSpecialtiesArgsList []*ListSpecialtiesArgs
 
-func (s *ListSpecialtiesArgsList) Len() int             { return len(*s) }
+func (s *ListSpecialtiesArgsList) Len() int               { return len(*s) }
 func (s *ListSpecialtiesArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *ListSpecialtiesArgsList) Append() model.Fielder  { v := &ListSpecialtiesArgs{}; *s = append(*s, v); return v }
-func (s *ListSpecialtiesArgsList) IsNil() bool          { return s == nil }
+func (s *ListSpecialtiesArgsList) Append() model.Fielder {
+	v := &ListSpecialtiesArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *ListSpecialtiesArgsList) IsNil() bool                      { return s == nil }
 func (s *ListSpecialtiesArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *ListSpecialtiesArgsList) DecodeFields(_ model.FieldReader) {}
 
 type GetSpecialtyArgs struct {
 	TenantId string
-	Id string
+	Id       string
 }
 
 func (m *GetSpecialtyArgs) ModelName() string { return "get_specialty_args" }
@@ -637,22 +801,30 @@ func (m *GetSpecialtyArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *GetSpecialtyArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
 }
 
 type GetSpecialtyArgsList []*GetSpecialtyArgs
 
-func (s *GetSpecialtyArgsList) Len() int             { return len(*s) }
+func (s *GetSpecialtyArgsList) Len() int               { return len(*s) }
 func (s *GetSpecialtyArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *GetSpecialtyArgsList) Append() model.Fielder  { v := &GetSpecialtyArgs{}; *s = append(*s, v); return v }
-func (s *GetSpecialtyArgsList) IsNil() bool          { return s == nil }
+func (s *GetSpecialtyArgsList) Append() model.Fielder {
+	v := &GetSpecialtyArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *GetSpecialtyArgsList) IsNil() bool                      { return s == nil }
 func (s *GetSpecialtyArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *GetSpecialtyArgsList) DecodeFields(_ model.FieldReader) {}
 
 type DeleteSpecialtyArgs struct {
 	TenantId string
-	Id string
+	Id       string
 }
 
 func (m *DeleteSpecialtyArgs) ModelName() string { return "delete_specialty_args" }
@@ -669,15 +841,23 @@ func (m *DeleteSpecialtyArgs) EncodeFields(w model.FieldWriter) {
 }
 
 func (m *DeleteSpecialtyArgs) DecodeFields(r model.FieldReader) {
-	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
-	if v, ok := r.String("id"); ok { m.Id = v }
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
 }
 
 type DeleteSpecialtyArgsList []*DeleteSpecialtyArgs
 
-func (s *DeleteSpecialtyArgsList) Len() int             { return len(*s) }
+func (s *DeleteSpecialtyArgsList) Len() int               { return len(*s) }
 func (s *DeleteSpecialtyArgsList) At(i int) model.Fielder { return (*s)[i] }
-func (s *DeleteSpecialtyArgsList) Append() model.Fielder  { v := &DeleteSpecialtyArgs{}; *s = append(*s, v); return v }
-func (s *DeleteSpecialtyArgsList) IsNil() bool          { return s == nil }
+func (s *DeleteSpecialtyArgsList) Append() model.Fielder {
+	v := &DeleteSpecialtyArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *DeleteSpecialtyArgsList) IsNil() bool                      { return s == nil }
 func (s *DeleteSpecialtyArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *DeleteSpecialtyArgsList) DecodeFields(_ model.FieldReader) {}

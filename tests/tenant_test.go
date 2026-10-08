@@ -3,9 +3,9 @@ package tests
 import (
 	"testing"
 
+	itemcatalog "github.com/veltylabs/item_catalog"
 	"webtyp.com/orm"
 	"webtyp.com/storage/mem"
-	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 func TestTenantIsolation(t *testing.T) {
@@ -33,7 +33,7 @@ func TestTenantIsolation(t *testing.T) {
 
 	// Tenant B cannot get tenant A's specialty
 	_, err = module.GetSpecialty(tenantB, specA.Id)
-	if err != itemcatalog.ErrSpecialtyNotFound {
+	if err != error(itemcatalog.ErrSpecialtyNotFound) {
 		t.Errorf("expected ErrSpecialtyNotFound for tenant B getting tenant A's specialty, got %v", err)
 	}
 
@@ -56,7 +56,7 @@ func TestTenantIsolation(t *testing.T) {
 
 	// 1. Tenant B must NOT be able to Get tenant A's item
 	_, err = module.GetItem(tenantB, createdA.Id)
-	if err != itemcatalog.ErrNotFound {
+	if err == nil || err.Error() != itemcatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B getting tenant A's item, got %v", err)
 	}
 
@@ -64,7 +64,7 @@ func TestTenantIsolation(t *testing.T) {
 	createdA.TenantId = tenantB
 	createdA.Name = "Hijacked Name"
 	_, err = module.UpdateItem(createdA)
-	if err != itemcatalog.ErrNotFound {
+	if err == nil || err.Error() != itemcatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B updating tenant A's item, got %v", err)
 	}
 
@@ -73,13 +73,13 @@ func TestTenantIsolation(t *testing.T) {
 
 	// 3. Tenant B must NOT be able to Deactivate tenant A's item
 	err = module.DeactivateItem(tenantB, createdA.Id)
-	if err != itemcatalog.ErrNotFound {
+	if err == nil || err.Error() != itemcatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B deactivating tenant A's item, got %v", err)
 	}
 
 	// 4. Tenant B must NOT be able to Delete tenant A's item
 	err = module.DeleteItem(tenantB, createdA.Id)
-	if err != itemcatalog.ErrNotFound {
+	if err == nil || err.Error() != itemcatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B deleting tenant A's item, got %v", err)
 	}
 
@@ -102,7 +102,7 @@ func TestTenantIsolation(t *testing.T) {
 	createdAgA.TenantId = tenantB
 	createdAgA.Insurer = "FONASA Hijacked"
 	_, err = module.UpsertAgreement(createdAgA)
-	if err != itemcatalog.ErrNotFound {
+	if err == nil || err.Error() != itemcatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B updating tenant A's agreement, got %v", err)
 	}
 
@@ -111,7 +111,7 @@ func TestTenantIsolation(t *testing.T) {
 
 	// 6. Tenant B must NOT be able to Delete tenant A's agreement
 	err = module.DeleteAgreement(tenantB, createdAgA.Id)
-	if err != itemcatalog.ErrNotFound {
+	if err == nil || err.Error() != itemcatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B deleting tenant A's agreement, got %v", err)
 	}
 }

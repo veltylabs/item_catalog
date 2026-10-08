@@ -54,7 +54,7 @@ func (m *Module) MigrateSpecialtiesAndItems(tenantId string) (MigrationReport, e
 		existing, err := m.GetSpecialtyByPrefix(tenantId, cs.Prefix)
 		if err == nil {
 			prefixToID = append(prefixToID, fmt.KeyValue{Key: cs.Prefix, Value: existing.Id})
-		} else if err == ErrSpecialtyNotFound {
+		} else if e, ok := err.(domainError); ok && e == ErrSpecialtyNotFound {
 			spec := Specialty{
 				TenantId:    tenantId,
 				Prefix:      cs.Prefix,
