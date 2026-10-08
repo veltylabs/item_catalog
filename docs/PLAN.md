@@ -145,3 +145,10 @@ lista, se migra igual. `x == nil` y `x != nil` están bien.
 
 Las de `AGENTS.md`, más: nada de `reflect`, `unsafe`, `errors.Is`/`errors.As`, ni `==`/`!=`/`switch`
 entre valores de interfaz con operandos no nil. No tocar otros repos.
+
+## Executor notes
+- Added `domainError` type and converted all internal sentinel errors to use it.
+- Updated occurrences of `err == orm.ErrNotFound` to `orm.IsNotFound(err)`.
+- Updated occurrences of internal sentinel errors using type assertions `e, ok := err.(domainError); ok && e == ErrSpecialtyNotFound` to avoid `reflectlite` in tinygo wasm.
+- Updated test error comparisons with strings.
+- Added test in `tests/error_test.go` to ensure sentinel error strings match exactly.

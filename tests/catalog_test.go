@@ -3,11 +3,11 @@ package tests
 import (
 	"testing"
 
+	itemcatalog "github.com/veltylabs/item_catalog"
 	"webtyp.com/model"
 	"webtyp.com/orm"
 	"webtyp.com/router/mock"
 	"webtyp.com/storage/mem"
-	itemcatalog "github.com/veltylabs/item_catalog"
 )
 
 func TestCatalog(t *testing.T) {
@@ -166,7 +166,7 @@ func TestCatalog(t *testing.T) {
 
 	// Test DeleteSpecialty while in use -> should fail with ErrSpecialtyInUse
 	err = module.DeleteSpecialty(tenantID, spec.Id)
-	if err != itemcatalog.ErrSpecialtyInUse {
+	if err == nil || err.Error() != itemcatalog.ErrSpecialtyInUse.Error() {
 		t.Errorf("expected ErrSpecialtyInUse, got %v", err)
 	}
 
@@ -236,7 +236,7 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 		Slug:     "oftalmologia-2",
 		Name:     "Oftalmología Segunda",
 	})
-	if err != itemcatalog.ErrSpecialtyPrefixExists {
+	if err == nil || err.Error() != itemcatalog.ErrSpecialtyPrefixExists.Error() {
 		t.Errorf("expected ErrSpecialtyPrefixExists, got %v", err)
 	}
 
@@ -247,7 +247,7 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 		Slug:     "oftalmologia",
 		Name:     "Oftalmología Segunda",
 	})
-	if err != itemcatalog.ErrSpecialtySlugExists {
+	if err == nil || err.Error() != itemcatalog.ErrSpecialtySlugExists.Error() {
 		t.Errorf("expected ErrSpecialtySlugExists, got %v", err)
 	}
 
