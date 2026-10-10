@@ -3,7 +3,6 @@ module github.com/veltylabs/item_catalog
 go 1.26.8
 
 require (
-	webtyp.com/components v0.8.16
 	webtyp.com/ddl v0.0.15
 	webtyp.com/dom v0.13.23
 	webtyp.com/events v0.0.5
@@ -25,6 +24,7 @@ require (
 
 require (
 	webtyp.com/color v0.1.2 // indirect
+	webtyp.com/components v0.8.16 // indirect
 	webtyp.com/css v0.4.29 // indirect
 	webtyp.com/date v0.0.9 // indirect
 	webtyp.com/escape v0.1.0 // indirect
@@ -32,5 +32,7 @@ require (
 	webtyp.com/icons v0.0.7 // indirect
 	webtyp.com/lang v0.1.3 // indirect
 	webtyp.com/msgtype v0.1.0 // indirect
-	webtyp.com/widget v0.6.37 // indirect
+	webtyp.com/widget v0.6.38 // indirect
 )
+
+replace webtyp.com/layout => ../../../webtyp/layout
