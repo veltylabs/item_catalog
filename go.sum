@@ -1,9 +1,5 @@
 webtyp.com/color v0.1.2 h1:PN2vx9jtlwFsu2juQoaj0GEJMY/ex3fQDcop20V8+ik=
 webtyp.com/color v0.1.2/go.mod h1:p5n4e0KRiPavkkQajtQKoMAU7C+1yx86AZlzMWTJhC8=
-webtyp.com/components v0.8.16 h1:Gz+NodPKaFlIjNAMcwg6FbDIIrdTfLE9AfWvFQ3poqQ=
-webtyp.com/components v0.8.16/go.mod h1:3d6AshnoVyQ5CFoksLU6/FvU/Fi1U8YAstuWb25elog=
-webtyp.com/css v0.4.29 h1:a7wYEO/AdS57EmmzvIqwRyrzidry9t7JC0Aqeo6hFhY=
-webtyp.com/css v0.4.29/go.mod h1:qbi0OpxKohFtrEzMCFmcM8w1LaLGSd+Nlw+LzLSNZhU=
 webtyp.com/date v0.0.9 h1:CjKFbRJwIU1xhX1uuuB4OlFcs9EnmzIdQ1+ppe2yfj0=
 webtyp.com/date v0.0.9/go.mod h1:fAoR0H0V1lNUp7ubtXkKMPw1qMyQcccDONRTanw57GU=
 webtyp.com/ddl v0.0.15 h1:8E1M8W09sG+kILT+cvMThAU+/ZO7rqTd7Fd1v3YYmB0=
@@ -48,5 +44,5 @@ webtyp.com/unixid v0.3.0 h1:tl7Ihcqgg6iVuQxoUPGFgi5mnDOGjOwJv+vyGnPl0Tw=
 webtyp.com/unixid v0.3.0/go.mod h1:/WObHBtM+xsGaUKrbKJSU16f5/hsYslFDHA7CccjMtY=
 webtyp.com/view v0.6.27 h1:XkwRWlY9+AYAkt0QgWb2NF3M+vZEbALp5K3bQxiDwE4=
 webtyp.com/view v0.6.27/go.mod h1:LOB0Xt/ZddE9Gd+VntN4e2A9eFUsHqGU9Uub1GSsqLY=
-webtyp.com/widget v0.6.38 h1:sN9PrCGOY/r2QtSlGXxzf8QfeVZ+ylmewbDBfoRbSoM=
-webtyp.com/widget v0.6.38/go.mod h1:Jzxu6AYDQw0xStNNxRyNrn6K1cNtBBe7LkAy/8EI1p4=
+webtyp.com/widget v0.6.39 h1:ipvDLQN4j1cwlEyOKiYWAg0rJOuVyGt/o+1Iquc4+w8=
+webtyp.com/widget v0.6.39/go.mod h1:Jzxu6AYDQw0xStNNxRyNrn6K1cNtBBe7LkAy/8EI1p4=
