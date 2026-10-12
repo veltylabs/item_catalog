@@ -1,10 +1,10 @@
 package tests
 
 import (
-	"errors"
 	"testing"
 
 	itemcatalog "github.com/veltylabs/item_catalog"
+	"webtyp.com/fmt"
 	"webtyp.com/model"
 	"webtyp.com/orm"
 	"webtyp.com/storage"
@@ -32,12 +32,15 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 	}
 
 	// Create specialty
-	spec, _ := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
 		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Create service
-	item, _ := module.CreateItem(itemcatalog.CatalogItem{
+	item, err := module.CreateItem(itemcatalog.CatalogItem{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Type:        itemcatalog.ItemTypeService,
@@ -47,6 +50,9 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 		Currency:    "USD",
 		IsActive:    true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, _, _, _, err = module.ServiceCard("t2", item.Id)
 	if err != itemcatalog.ErrNotFound {
@@ -65,20 +71,19 @@ type errConn struct {
 
 func (e *errConn) Compile(q storage.Query, m model.Model) (storage.Plan, error) {
 	p, _ := e.Conn.Compile(q, m)
-	return p, errors.New("db error")
-}
-
-func (e *errConn) DriverName() string {
-	return "errConn"
+	return p, fmt.Err("db error")
 }
 
 func TestServiceCard_StorageErrorPropagates(t *testing.T) {
 	// Use mem.New() as the underlying storage, but wrap it in our errConn
 	underlying := mem.New()
 	db := orm.New(&errConn{Conn: underlying})
-	module, _ := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	_, _, _, _, err := module.ServiceCard("t", "id")
+	_, _, _, _, err = module.ServiceCard("t", "id")
 	if err == nil || err == itemcatalog.ErrNotFound {
 		t.Fatalf("expected arbitrary error, got %v", err)
 	}
@@ -94,11 +99,14 @@ func TestServiceCard_ProductIsNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	spec, _ := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
 		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	item, _ := module.CreateItem(itemcatalog.CatalogItem{
+	item, err := module.CreateItem(itemcatalog.CatalogItem{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Type:        itemcatalog.ItemTypeProduct, // Es producto
@@ -108,6 +116,9 @@ func TestServiceCard_ProductIsNotFound(t *testing.T) {
 		Currency:    "USD",
 		IsActive:    true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, _, _, _, err = module.ServiceCard("t1", item.Id)
 	if err != itemcatalog.ErrNotFound {
@@ -122,11 +133,14 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	spec, _ := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
 		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	activeItem, _ := module.CreateItem(itemcatalog.CatalogItem{
+	activeItem, err := module.CreateItem(itemcatalog.CatalogItem{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Type:        itemcatalog.ItemTypeService,
@@ -136,8 +150,11 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		Currency:    "CLP",
 		IsActive:    true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	inactiveItem, _ := module.CreateItem(itemcatalog.CatalogItem{
+	inactiveItem, err := module.CreateItem(itemcatalog.CatalogItem{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Type:        itemcatalog.ItemTypeService,
@@ -147,10 +164,14 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		Currency:    "USD",
 		IsActive:    true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Forzamos IsActive a false en base de datos ya que Validate de Model rechaza false por NotNull: true
-	db.Update(&inactiveItem, orm.Eq("id", inactiveItem.Id))
 	inactiveItem.IsActive = false
-	db.Update(&inactiveItem, orm.Eq("id", inactiveItem.Id))
+	if err := db.Update(&inactiveItem, orm.Eq("id", inactiveItem.Id)); err != nil {
+		t.Fatal(err)
+	}
 
 	// Test activo
 	name, price, currency, active, err := module.ServiceCard("t1", activeItem.Id)
