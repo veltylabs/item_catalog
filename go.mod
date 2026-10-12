@@ -11,7 +11,7 @@ require (
 	webtyp.com/html v0.0.27
 	webtyp.com/input v0.0.18
 	webtyp.com/json v0.5.29
-	webtyp.com/layout v0.3.39
+	webtyp.com/layout v0.3.41
 	webtyp.com/model v0.2.2
 	webtyp.com/msgtype v0.1.0
 	webtyp.com/orm v0.12.8
@@ -34,5 +34,3 @@ require (
 	webtyp.com/lang v0.1.3 // indirect
 	webtyp.com/widget v0.6.40 // indirect
 )
-
-replace webtyp.com/layout => ../../../webtyp/layout
