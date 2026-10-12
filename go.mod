@@ -7,7 +7,7 @@ require (
 	webtyp.com/dom v0.13.24
 	webtyp.com/events v0.0.5
 	webtyp.com/fmt v1.0.0
-	webtyp.com/form v0.4.30
+	webtyp.com/form v0.4.34
 	webtyp.com/html v0.0.27
 	webtyp.com/input v0.0.18
 	webtyp.com/json v0.5.29
@@ -35,7 +35,4 @@ require (
 	webtyp.com/widget v0.6.40 // indirect
 )
 
-replace (
-	webtyp.com/form => ../../../webtyp/form
-	webtyp.com/layout => ../../../webtyp/layout
-)
+replace webtyp.com/layout => ../../../webtyp/layout
