@@ -4,7 +4,7 @@ go 1.26.8
 
 require (
 	webtyp.com/ddl v0.0.15
-	webtyp.com/dom v0.13.23
+	webtyp.com/dom v0.13.24
 	webtyp.com/events v0.0.5
 	webtyp.com/fmt v1.0.0
 	webtyp.com/form v0.4.30
@@ -37,7 +37,6 @@ require (
 
 replace (
 	webtyp.com/components => ../../../webtyp/components
-	webtyp.com/dom => ../../../webtyp/dom
 	webtyp.com/form => ../../../webtyp/form
 	webtyp.com/layout => ../../../webtyp/layout
 	webtyp.com/widget => ../../../webtyp/widget
