@@ -7,30 +7,33 @@ import (
 
 	itemcatalog "github.com/veltylabs/item_catalog"
 	"github.com/veltylabs/item_catalog/ui"
-	"webtyp.com/components/decktabs"
-	"webtyp.com/dom"
 	"webtyp.com/json"
 	"webtyp.com/layout/crudview"
+	"webtyp.com/layout/platformd"
 	"webtyp.com/model"
 	"webtyp.com/view"
 )
 
-// itemsPanel reaches the "Servicios" tab's own *crudview.CrudView. Browser
-// composes two tabs (Servicios + Especialidades — a catalog item cannot save
-// without a specialty to pick, see requireSpecialty in browser.go), so the
-// screen itself is a *decktabs.DeckTabs, not a bare crudview.
-func itemsPanel(t *testing.T, comp dom.Component) *crudview.CrudView {
+
+// itemsPanel reaches the "Servicios" child's own *crudview.CrudView. Browser
+// returns a platformd.GroupModule containing Servicios and Especialidades as submodules.
+func itemsPanel(t *testing.T, mod platformd.UIModule) *crudview.CrudView {
 	t.Helper()
-	tabs, ok := comp.(*decktabs.DeckTabs)
+	group, ok := mod.(platformd.GroupModule)
 	if !ok {
-		t.Fatalf("expected *decktabs.DeckTabs, got %T", comp)
+		t.Fatalf("expected platformd.GroupModule, got %T", mod)
 	}
-	cv, ok := tabs.Items[0].Panel.(*crudview.CrudView)
+	children := group.Children()
+	if len(children) == 0 {
+		t.Fatalf("expected GroupModule to have children")
+	}
+	cv, ok := children[0].View().(*crudview.CrudView)
 	if !ok {
-		t.Fatalf("expected tab 0 (Servicios) to be a *crudview.CrudView, got %T", tabs.Items[0].Panel)
+		t.Fatalf("expected child 0 (Servicios) view to be a *crudview.CrudView, got %T", children[0].View())
 	}
 	return cv
 }
+
 
 func TestWASM_ItemCatalog_View(t *testing.T) {
 	var calledOps []string
@@ -55,7 +58,7 @@ func TestWASM_ItemCatalog_View(t *testing.T) {
 		t.Fatalf("ui.Browser: %v", err)
 	}
 
-	cv := itemsPanel(t, m.View())
+	cv := itemsPanel(t, m)
 	cv.Init(nil)
 	m.Activate()
 
@@ -112,7 +115,7 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 		t.Fatalf("ui.Browser: %v", err)
 	}
 
-	cv := itemsPanel(t, m.View())
+	cv := itemsPanel(t, m)
 	cv.Init(nil)
 	m.Activate()
 
@@ -138,6 +141,19 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 	}
 	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpUpsertItem {
 		t.Errorf("expected last op %q after save, got %q", itemcatalog.ModelName+"."+itemcatalog.OpUpsertItem, mock.lastOp)
+	}
+
+	updater, ok := cv.Presenter.(view.Updater)
+	if !ok {
+		t.Fatal("expected Presenter to implement view.Updater")
+	}
+	var uerr error
+	updater.Update([]string{seed.Id}, record, []string{"name"}, func(err error) { uerr = err })
+	if uerr != nil {
+		t.Fatalf("Update: %v", uerr)
+	}
+	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpUpdateItem {
+		t.Errorf("expected last op %q after update, got %q", itemcatalog.ModelName+"."+itemcatalog.OpUpdateItem, mock.lastOp)
 	}
 
 	deleter, ok := cv.Presenter.(view.Deleter)
@@ -170,7 +186,7 @@ func TestWASM_ItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ui.Browser: %v", err)
 	}
-	cv := itemsPanel(t, m.View())
+	cv := itemsPanel(t, m)
 	cv.Init(nil)
 
 	saver, ok := cv.Presenter.(view.Saver)

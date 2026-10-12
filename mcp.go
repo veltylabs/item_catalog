@@ -84,7 +84,10 @@ func New(db *orm.DB, deps Deps) (*Module, error) {
 
 func (m *Module) GetSpecialty(tenantId, id string) (Specialty, error) {
 	var spec Specialty
-	qb := m.db.Query(&spec).Where(Specialty_.Id).Eq(id).Where(Specialty_.TenantId).Eq(tenantId)
+	qb := m.db.Query(&spec).Where(Specialty_.Id).Eq(id)
+	if tenantId != "" {
+		qb = qb.Where(Specialty_.TenantId).Eq(tenantId)
+	}
 	_, err := ReadOneSpecialty(qb, &spec)
 	if err != nil {
 		if orm.IsNotFound(err) {
@@ -182,6 +185,15 @@ func (m *Module) UpsertSpecialty(spec Specialty) (Specialty, error) {
 	// Verify specialty exists and belongs to tenant
 	_, err = m.GetSpecialty(spec.TenantId, spec.Id)
 	if err != nil {
+		if orm.IsNotFound(err) || err == ErrSpecialtyNotFound {
+			if err := m.db.Create(&spec); err != nil {
+				return Specialty{}, err
+			}
+			if m.pub != nil {
+				m.pub.Publish(events.Event{Topic: TopicSpecialtyCreated, Payload: &spec})
+			}
+			return spec, nil
+		}
 		return Specialty{}, err
 	}
 
@@ -202,7 +214,10 @@ func (m *Module) DeleteSpecialty(tenantId, id string) error {
 
 	// Check if any catalog item is using this specialty
 	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.TenantId).Eq(tenantId).Where(CatalogItem_.SpecialtyId).Eq(id)
+	qb := m.db.Query(&item).Where(CatalogItem_.SpecialtyId).Eq(id)
+	if spec.TenantId != "" {
+		qb = qb.Where(CatalogItem_.TenantId).Eq(spec.TenantId)
+	}
 	items, err := ReadAllCatalogItem(qb)
 	if err != nil {
 		return err
@@ -211,8 +226,14 @@ func (m *Module) DeleteSpecialty(tenantId, id string) error {
 		return ErrSpecialtyInUse
 	}
 
-	if err := m.db.Delete(&spec, orm.Eq(Specialty_.Id, id), orm.Eq(Specialty_.TenantId, tenantId)); err != nil {
-		return err
+	if spec.TenantId != "" {
+		if err := m.db.Delete(&spec, orm.Eq(Specialty_.Id, id), orm.Eq(Specialty_.TenantId, spec.TenantId)); err != nil {
+			return err
+		}
+	} else {
+		if err := m.db.Delete(&spec, orm.Eq(Specialty_.Id, id)); err != nil {
+			return err
+		}
 	}
 	if m.pub != nil {
 		m.pub.Publish(events.Event{Topic: TopicSpecialtyDeleted, Payload: &spec})
@@ -224,7 +245,10 @@ func (m *Module) DeleteSpecialty(tenantId, id string) error {
 
 func (m *Module) GetItem(tenantId, id string) (CatalogItem, error) {
 	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.Id).Eq(id).Where(CatalogItem_.TenantId).Eq(tenantId)
+	qb := m.db.Query(&item).Where(CatalogItem_.Id).Eq(id)
+	if tenantId != "" {
+		qb = qb.Where(CatalogItem_.TenantId).Eq(tenantId)
+	}
 	_, err := ReadOneCatalogItem(qb, &item)
 	if err != nil {
 		if orm.IsNotFound(err) {
@@ -278,7 +302,9 @@ func (m *Module) ListItems(tenantId string, filter ItemFilter) ([]CatalogItem, e
 }
 
 func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
-	item.Id = m.ids.NewID()
+	if item.Id == "" {
+		item.Id = m.ids.NewID()
+	}
 	item.UpdatedAt = time.Now()
 
 	if err := item.Validate(model.ActionCreate); err != nil {
@@ -316,9 +342,12 @@ func (m *Module) UpdateItem(item CatalogItem) (CatalogItem, error) {
 	}
 
 	// Verify item exists and belongs to tenant
-	_, err := m.GetItem(item.TenantId, item.Id)
+	existing, err := m.GetItem(item.TenantId, item.Id)
 	if err != nil {
 		return CatalogItem{}, err
+	}
+	if item.TenantId == "" {
+		item.TenantId = existing.TenantId
 	}
 
 	item.UpdatedAt = time.Now()
@@ -352,8 +381,14 @@ func (m *Module) DeleteItem(tenantId, id string) error {
 	if err != nil {
 		return err
 	}
-	if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
-		return err
+	if item.TenantId != "" {
+		if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
+			return err
+		}
+	} else {
+		if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
+			return err
+		}
 	}
 	if m.pub != nil {
 		m.pub.Publish(events.Event{Topic: TopicItemDeleted, Payload: &item})
@@ -464,20 +499,160 @@ const ModelName = "item_catalog"
 
 func (m *Module) ModelName() string { return ModelName }
 
+// UpsertSpecialtyArgs carries the plural batch for OpUpsertSpecialty.
+type UpsertSpecialtyArgs struct {
+	Records []Specialty
+}
+
+func (a *UpsertSpecialtyArgs) ModelName() string     { return "upsert_specialty_args" }
+func (a *UpsertSpecialtyArgs) Schema() []model.Field { return nil }
+func (a *UpsertSpecialtyArgs) Pointers() []any       { return nil }
+func (a *UpsertSpecialtyArgs) IsNil() bool           { return a == nil }
+func (a *UpsertSpecialtyArgs) EncodeFields(w model.FieldWriter) {
+	arr := w.Array("records", len(a.Records))
+	for i := range a.Records {
+		arr.Object(&a.Records[i])
+	}
+	arr.Close()
+}
+func (a *UpsertSpecialtyArgs) DecodeFields(r model.FieldReader) {
+	if arr, ok := r.Array("records"); ok {
+		a.Records = make([]Specialty, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			arr.Object(i, &a.Records[i])
+		}
+	}
+}
+
+// DeleteSpecialtiesArgs carries the IDs to remove for OpDeleteSpecialty.
+type DeleteSpecialtiesArgs struct {
+	Ids []string
+}
+
+func (a *DeleteSpecialtiesArgs) ModelName() string     { return "delete_specialties_args" }
+func (a *DeleteSpecialtiesArgs) Schema() []model.Field { return nil }
+func (a *DeleteSpecialtiesArgs) Pointers() []any       { return nil }
+func (a *DeleteSpecialtiesArgs) IsNil() bool           { return a == nil }
+func (a *DeleteSpecialtiesArgs) EncodeFields(w model.FieldWriter) {
+	arr := w.Array("ids", len(a.Ids))
+	for _, id := range a.Ids {
+		arr.String(id)
+	}
+	arr.Close()
+}
+func (a *DeleteSpecialtiesArgs) DecodeFields(r model.FieldReader) {
+	if arr, ok := r.Array("ids"); ok {
+		a.Ids = make([]string, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			a.Ids[i] = arr.String(i)
+		}
+	}
+}
+
+// UpsertItemArgs carries the plural batch for OpUpsertItem.
+type UpsertItemArgs struct {
+	Records []CatalogItem
+}
+
+func (a *UpsertItemArgs) ModelName() string     { return "upsert_item_args" }
+func (a *UpsertItemArgs) Schema() []model.Field { return nil }
+func (a *UpsertItemArgs) Pointers() []any       { return nil }
+func (a *UpsertItemArgs) IsNil() bool           { return a == nil }
+func (a *UpsertItemArgs) EncodeFields(w model.FieldWriter) {
+	arr := w.Array("records", len(a.Records))
+	for i := range a.Records {
+		arr.Object(&a.Records[i])
+	}
+	arr.Close()
+}
+func (a *UpsertItemArgs) DecodeFields(r model.FieldReader) {
+	if arr, ok := r.Array("records"); ok {
+		a.Records = make([]CatalogItem, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			arr.Object(i, &a.Records[i])
+		}
+	}
+}
+
+// DeleteItemsArgs carries the IDs to remove for OpDeleteItem.
+type DeleteItemsArgs struct {
+	Ids []string
+}
+
+func (a *DeleteItemsArgs) ModelName() string     { return "delete_items_args" }
+func (a *DeleteItemsArgs) Schema() []model.Field { return nil }
+func (a *DeleteItemsArgs) Pointers() []any       { return nil }
+func (a *DeleteItemsArgs) IsNil() bool           { return a == nil }
+func (a *DeleteItemsArgs) EncodeFields(w model.FieldWriter) {
+	arr := w.Array("ids", len(a.Ids))
+	for _, id := range a.Ids {
+		arr.String(id)
+	}
+	arr.Close()
+}
+func (a *DeleteItemsArgs) DecodeFields(r model.FieldReader) {
+	if arr, ok := r.Array("ids"); ok {
+		a.Ids = make([]string, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			a.Ids[i] = arr.String(i)
+		}
+	}
+}
+
+// UpdateItemArgs carries the field patch for OpUpdateItem.
+type UpdateItemArgs struct {
+	Ids    []string
+	Fields []string
+	Record CatalogItem
+}
+
+func (a *UpdateItemArgs) ModelName() string     { return "update_item_args" }
+func (a *UpdateItemArgs) Schema() []model.Field { return nil }
+func (a *UpdateItemArgs) Pointers() []any       { return nil }
+func (a *UpdateItemArgs) IsNil() bool           { return a == nil }
+func (a *UpdateItemArgs) EncodeFields(w model.FieldWriter) {
+	ids := w.Array("ids", len(a.Ids))
+	for _, id := range a.Ids {
+		ids.String(id)
+	}
+	ids.Close()
+	fields := w.Array("fields", len(a.Fields))
+	for _, f := range a.Fields {
+		fields.String(f)
+	}
+	fields.Close()
+	w.Object("record", &a.Record)
+}
+func (a *UpdateItemArgs) DecodeFields(r model.FieldReader) {
+	if arr, ok := r.Array("ids"); ok {
+		a.Ids = make([]string, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			a.Ids[i] = arr.String(i)
+		}
+	}
+	if arr, ok := r.Array("fields"); ok {
+		a.Fields = make([]string, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			a.Fields[i] = arr.String(i)
+		}
+	}
+	r.Object("record", &a.Record)
+}
+
 func (m *Module) MountOperations(reg router.OperationRegistry) {
 	reg.Operation(OpListSpecialties, m.opListSpecialties).Requires("specialty", model.Read).Accepts(&ListSpecialtiesArgs{})
 	reg.Operation(OpGetSpecialty, m.opGetSpecialty).Requires("specialty", model.Read).Accepts(&GetSpecialtyArgs{})
-	reg.Operation(OpUpsertSpecialty, m.opUpsertSpecialty).Requires("specialty", model.Create|model.Update).Accepts(&Specialty{})
-	reg.Operation(OpDeleteSpecialty, m.opDeleteSpecialty).Requires("specialty", model.Delete).Accepts(&DeleteSpecialtyArgs{})
+	reg.Operation(OpUpsertSpecialty, m.opUpsertSpecialty).Requires("specialty", model.Create|model.Update).Accepts(&UpsertSpecialtyArgs{})
+	reg.Operation(OpDeleteSpecialty, m.opDeleteSpecialty).Requires("specialty", model.Delete).Accepts(&DeleteSpecialtiesArgs{})
 
 	reg.Operation(OpListItems, m.opListItems).Requires("catalog_item", model.Read).Accepts(&ListItemsArgs{})
 	reg.Operation(OpGetItem, m.opGetItem).Requires("catalog_item", model.Read).Accepts(&GetItemArgs{})
 	reg.Operation(OpFindItemBySKU, m.opFindItemBySKU).Requires("catalog_item", model.Read).Accepts(&FindBySKUArgs{})
 	reg.Operation(OpCreateItem, m.opCreateItem).Requires("catalog_item", model.Create).Accepts(&CatalogItem{})
-	reg.Operation(OpUpdateItem, m.opUpdateItem).Requires("catalog_item", model.Update).Accepts(&CatalogItem{})
-	reg.Operation(OpUpsertItem, m.opUpsertItem).Requires("catalog_item", model.Create|model.Update).Accepts(&CatalogItem{})
+	reg.Operation(OpUpdateItem, m.opUpdateItem).Requires("catalog_item", model.Update).Accepts(&UpdateItemArgs{})
+	reg.Operation(OpUpsertItem, m.opUpsertItem).Requires("catalog_item", model.Create|model.Update).Accepts(&UpsertItemArgs{})
 	reg.Operation(OpDeactivateItem, m.opDeactivateItem).Requires("catalog_item", model.Update).Accepts(&DeactivateItemArgs{})
-	reg.Operation(OpDeleteItem, m.opDeleteItem).Requires("catalog_item", model.Delete).Accepts(&DeleteItemArgs{})
+	reg.Operation(OpDeleteItem, m.opDeleteItem).Requires("catalog_item", model.Delete).Accepts(&DeleteItemsArgs{})
 
 	reg.Operation(OpListAgreements, m.opListAgreements).Requires("catalog_agreement", model.Read).Accepts(&ListAgreementsArgs{})
 	reg.Operation(OpUpsertAgreement, m.opUpsertAgreement).Requires("catalog_agreement", model.Create|model.Update).Accepts(&Agreement{})
@@ -527,44 +702,58 @@ func (m *Module) opGetSpecialty(ctx router.Context) {
 }
 
 func (m *Module) opUpsertSpecialty(ctx router.Context) {
-	var spec Specialty
-	if err := ctx.Decode(&spec); err != nil {
+	var args UpsertSpecialtyArgs
+	if err := ctx.Decode(&args); err != nil {
 		ctx.WriteStatus(400)
 		return
 	}
-	out, err := m.UpsertSpecialty(spec)
-	if err != nil {
-		if _, ok := err.(ValidationError); ok {
-			ctx.WriteStatus(400)
-		} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyPrefixExists || e == ErrSpecialtySlugExists) {
-			ctx.WriteStatus(409)
-		} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+	if len(args.Records) == 0 {
+		ctx.WriteStatus(400)
 		return
 	}
-	if err := ctx.Encode(&out); err != nil {
+	var last Specialty
+	for _, spec := range args.Records {
+		out, err := m.UpsertSpecialty(spec)
+		if err != nil {
+			if _, ok := err.(ValidationError); ok {
+				ctx.WriteStatus(400)
+			} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyPrefixExists || e == ErrSpecialtySlugExists) {
+				ctx.WriteStatus(409)
+			} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
+				ctx.WriteStatus(404)
+			} else {
+				ctx.WriteStatus(500)
+			}
+			return
+		}
+		last = out
+	}
+	if err := ctx.Encode(&last); err != nil {
 		ctx.WriteStatus(500)
 	}
 }
 
 func (m *Module) opDeleteSpecialty(ctx router.Context) {
-	var args DeleteSpecialtyArgs
+	var args DeleteSpecialtiesArgs
 	if err := ctx.Decode(&args); err != nil {
 		ctx.WriteStatus(400)
 		return
 	}
-	if err := m.DeleteSpecialty(args.TenantId, args.Id); err != nil {
-		if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
-			ctx.WriteStatus(404)
-		} else if e, ok := err.(domainError); ok && e == ErrSpecialtyInUse {
-			ctx.WriteStatus(400)
-		} else {
-			ctx.WriteStatus(500)
-		}
+	if len(args.Ids) == 0 {
+		ctx.WriteStatus(400)
 		return
+	}
+	for _, id := range args.Ids {
+		if err := m.DeleteSpecialty("", id); err != nil {
+			if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
+				ctx.WriteStatus(404)
+			} else if e, ok := err.(domainError); ok && e == ErrSpecialtyInUse {
+				ctx.WriteStatus(400)
+			} else {
+				ctx.WriteStatus(500)
+			}
+			return
+		}
 	}
 	ctx.WriteStatus(200)
 }
@@ -653,53 +842,88 @@ func (m *Module) opCreateItem(ctx router.Context) {
 }
 
 func (m *Module) opUpdateItem(ctx router.Context) {
-	var item CatalogItem
-	if err := ctx.Decode(&item); err != nil {
+	var args UpdateItemArgs
+	if err := ctx.Decode(&args); err != nil {
 		ctx.WriteStatus(400)
 		return
 	}
-	updated, err := m.UpdateItem(item)
-	if err != nil {
-		if _, ok := err.(ValidationError); ok {
-			ctx.WriteStatus(400)
-		} else if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+	if len(args.Ids) == 0 {
+		ctx.WriteStatus(400)
 		return
 	}
-	if err := ctx.Encode(&updated); err != nil {
-		ctx.WriteStatus(500)
+	for _, id := range args.Ids {
+		existing, err := m.GetItem("", id)
+		if err != nil {
+			if e, ok := err.(domainError); ok && e == ErrNotFound {
+				ctx.WriteStatus(404)
+			} else {
+				ctx.WriteStatus(500)
+			}
+			return
+		}
+		for _, f := range args.Fields {
+			switch f {
+			case "name":
+				existing.Name = args.Record.Name
+			case "description":
+				existing.Description = args.Record.Description
+			case "price":
+				existing.Price = args.Record.Price
+			case "sku":
+				existing.Sku = args.Record.Sku
+			case "is_active":
+				existing.IsActive = args.Record.IsActive
+			case "type":
+				existing.Type = args.Record.Type
+			case "specialty_id":
+				existing.SpecialtyId = args.Record.SpecialtyId
+			}
+		}
+		if _, err := m.UpdateItem(existing); err != nil {
+			ctx.WriteStatus(400)
+			return
+		}
 	}
+	ctx.WriteStatus(200)
 }
 
 func (m *Module) opUpsertItem(ctx router.Context) {
-	var item CatalogItem
-	if err := ctx.Decode(&item); err != nil {
+	var args UpsertItemArgs
+	if err := ctx.Decode(&args); err != nil {
 		ctx.WriteStatus(400)
 		return
 	}
-	var out CatalogItem
-	var err error
-	if item.Id == "" {
-		out, err = m.CreateItem(item)
-	} else {
-		out, err = m.UpdateItem(item)
-	}
-	if err != nil {
-		if _, ok := err.(ValidationError); ok {
-			ctx.WriteStatus(400)
-		} else if e, ok := err.(domainError); ok && e == ErrAlreadyExists {
-			ctx.WriteStatus(409)
-		} else if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+	if len(args.Records) == 0 {
+		ctx.WriteStatus(400)
 		return
 	}
-	if err := ctx.Encode(&out); err != nil {
+	var last CatalogItem
+	for _, item := range args.Records {
+		var out CatalogItem
+		var err error
+		if item.Id == "" {
+			out, err = m.CreateItem(item)
+		} else {
+			out, err = m.UpdateItem(item)
+			if err != nil && (err == ErrNotFound || orm.IsNotFound(err)) {
+				out, err = m.CreateItem(item)
+			}
+		}
+		if err != nil {
+			if _, ok := err.(ValidationError); ok {
+				ctx.WriteStatus(400)
+			} else if e, ok := err.(domainError); ok && e == ErrAlreadyExists {
+				ctx.WriteStatus(409)
+			} else if e, ok := err.(domainError); ok && e == ErrNotFound {
+				ctx.WriteStatus(404)
+			} else {
+				ctx.WriteStatus(500)
+			}
+			return
+		}
+		last = out
+	}
+	if err := ctx.Encode(&last); err != nil {
 		ctx.WriteStatus(500)
 	}
 }
@@ -722,18 +946,24 @@ func (m *Module) opDeactivateItem(ctx router.Context) {
 }
 
 func (m *Module) opDeleteItem(ctx router.Context) {
-	var args DeleteItemArgs
+	var args DeleteItemsArgs
 	if err := ctx.Decode(&args); err != nil {
 		ctx.WriteStatus(400)
 		return
 	}
-	if err := m.DeleteItem(args.TenantId, args.Id); err != nil {
-		if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+	if len(args.Ids) == 0 {
+		ctx.WriteStatus(400)
 		return
+	}
+	for _, id := range args.Ids {
+		if err := m.DeleteItem("", id); err != nil {
+			if e, ok := err.(domainError); ok && e == ErrNotFound {
+				ctx.WriteStatus(404)
+			} else {
+				ctx.WriteStatus(500)
+			}
+			return
+		}
 	}
 	ctx.WriteStatus(200)
 }

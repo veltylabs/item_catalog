@@ -46,8 +46,11 @@ func TestMCPOperations(t *testing.T) {
 		Slug:     "medicina-general",
 		Name:     "Medicina General",
 	}
+	specArgs := itemcatalog.UpsertSpecialtyArgs{
+		Records: []itemcatalog.Specialty{spec},
+	}
 	var specBytes []byte
-	_ = json.Encode(&spec, &specBytes)
+	_ = json.Encode(&specArgs, &specBytes)
 
 	ctxSpecUpsert := &mock.Context{
 		InBody: specBytes,
@@ -160,15 +163,20 @@ func TestMCPOperations(t *testing.T) {
 
 	// 4. Update item via OP
 	createdItem.Name = "Mcp Product Updated"
+	updateArgs := itemcatalog.UpdateItemArgs{
+		Ids:    []string{createdItem.Id},
+		Fields: []string{"name"},
+		Record: createdItem,
+	}
 	var updateBytes []byte
-	_ = json.Encode(&createdItem, &updateBytes)
+	_ = json.Encode(&updateArgs, &updateBytes)
 
 	ctxUpdate := &mock.Context{
 		InBody: updateBytes,
 	}
 	r.Invoke("OP", "/"+itemcatalog.OpUpdateItem, ctxUpdate)
 	if ctxUpdate.Status != 0 && ctxUpdate.Status != 200 {
-		t.Fatalf("expected update status success, got %d", ctxUpdate.Status)
+		t.Fatalf("expected update status success, got %d, body: %s", ctxUpdate.Status, string(ctxUpdate.ResponseBody()))
 	}
 
 	// 5. Upsert item via OP (Create with empty ID)
@@ -182,8 +190,11 @@ func TestMCPOperations(t *testing.T) {
 		Currency:    "USD",
 		IsActive:    true,
 	}
+	upsertArgs := itemcatalog.UpsertItemArgs{
+		Records: []itemcatalog.CatalogItem{upsertItem},
+	}
 	var upsertBytes []byte
-	_ = json.Encode(&upsertItem, &upsertBytes)
+	_ = json.Encode(&upsertArgs, &upsertBytes)
 
 	ctxUpsert := &mock.Context{
 		InBody: upsertBytes,
@@ -192,7 +203,6 @@ func TestMCPOperations(t *testing.T) {
 	if ctxUpsert.Status != 0 && ctxUpsert.Status != 200 {
 		t.Fatalf("expected upsert status success, got %d", ctxUpsert.Status)
 	}
-
 	var upsertedItem itemcatalog.CatalogItem
 	if err := json.Decode(ctxUpsert.ResponseBody(), &upsertedItem); err != nil {
 		t.Fatal(err)
@@ -243,9 +253,8 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 8. Delete item via OP
-	deleteArgs := itemcatalog.DeleteItemArgs{
-		TenantId: tenantID,
-		Id:       createdItem.Id,
+	deleteArgs := itemcatalog.DeleteItemsArgs{
+		Ids: []string{createdItem.Id},
 	}
 	var deleteBytes []byte
 	_ = json.Encode(&deleteArgs, &deleteBytes)

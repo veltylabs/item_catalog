@@ -9,6 +9,7 @@ import (
 
 	. "webtyp.com/dom"
 	"webtyp.com/events/mock"
+	. "webtyp.com/html"
 	"webtyp.com/layout/platformd"
 	"webtyp.com/orm"
 	"webtyp.com/router/loopback"
@@ -17,6 +18,7 @@ import (
 )
 
 // demoTenantID is the only tenant of this in-browser demo.
+// Rebuild trigger with plural contracts and notifications.
 const demoTenantID = "demo"
 
 // demoUser is the fixed identity the demo shell shows: the demo has no login.
@@ -53,10 +55,16 @@ func main() {
 		panic(err)
 	}
 
+	dummyHomeView := Div().Text("Vista de Inicio (Dummy)")
+	homeMod := platformd.NewUIModule("home", "Inicio", ui.IconCatalog, dummyHomeView)
+
+	dummySettingsView := Div().Text("Vista de Ajustes (Dummy)")
+	settingsMod := platformd.NewUIModule("settings", "Ajustes", ui.IconCatalog, dummySettingsView)
+
 	p := &platformd.Platform{
 		AppName:   ui.Label + " — demo",
 		User:      demoUser{},
-		Modules:   []platformd.UIModule{v},
+		Modules:   []platformd.UIModule{homeMod, v, settingsMod},
 		DefaultID: ui.ID,
 	}
 	Append("body", p)
