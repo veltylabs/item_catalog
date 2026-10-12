@@ -25,7 +25,7 @@ require (
 
 require (
 	webtyp.com/color v0.1.2 // indirect
-	webtyp.com/components v0.8.16 // indirect
+	webtyp.com/components v0.8.23 // indirect
 	webtyp.com/css v0.4.30 // indirect
 	webtyp.com/date v0.0.9 // indirect
 	webtyp.com/escape v0.1.0 // indirect
@@ -36,7 +36,6 @@ require (
 )
 
 replace (
-	webtyp.com/components => ../../../webtyp/components
 	webtyp.com/form => ../../../webtyp/form
 	webtyp.com/layout => ../../../webtyp/layout
 )
