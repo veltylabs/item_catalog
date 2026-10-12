@@ -32,12 +32,11 @@ require (
 	webtyp.com/font v0.0.5 // indirect
 	webtyp.com/icons v0.0.7 // indirect
 	webtyp.com/lang v0.1.3 // indirect
-	webtyp.com/widget v0.6.39 // indirect
+	webtyp.com/widget v0.6.40 // indirect
 )
 
 replace (
 	webtyp.com/components => ../../../webtyp/components
 	webtyp.com/form => ../../../webtyp/form
 	webtyp.com/layout => ../../../webtyp/layout
-	webtyp.com/widget => ../../../webtyp/widget
 )
