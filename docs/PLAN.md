@@ -2,6 +2,8 @@
 PLAN: "feat: ServiceCard — nombre, precio de lista, moneda y estado de un servicio"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 6641213984342180958
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: agents-workflow.
