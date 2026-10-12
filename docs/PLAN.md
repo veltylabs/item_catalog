@@ -2,8 +2,9 @@
 PLAN: "feat: ServiceCard — nombre, precio de lista, moneda y estado de un servicio"
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 6641213984342180958
+PR: https://github.com/veltylabs/item_catalog/pull/10
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: agents-workflow.
@@ -75,3 +76,8 @@ Diagrama: vacío ⇒ `ErrNotFound`; `GetItem` ⇒ `ErrNotFound` tal cual; otro e
 - Historial: commit `test:` en rojo antes del `feat:`.
 - `git diff --stat main` lista exactamente `mcp.go`, `tests/service_card_test.go`, `README.md`;
   nada borrado.
+
+## Executor notes
+- Implementing `ServiceCard` using `m.GetItem` as planned.
+- Tests updated to correctly fail/mock storage errors through the `Compile` interceptor instead of `Query` interceptor.
+- `README.md` updated with `ServiceCard` under `Readers (Cross-Module)`.
