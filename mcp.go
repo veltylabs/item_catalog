@@ -407,6 +407,23 @@ func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
 	return item.Type == ItemTypeService && item.IsActive, nil
 }
 
+// ServiceCard devuelve nombre, precio de lista, moneda y estado de un servicio
+// del catálogo. Satisface CatalogReader.ServiceCard de appointment_booking
+// estructuralmente. Ausente, de otro tenant o que no es servicio ⇒ ErrNotFound.
+func (m *Module) ServiceCard(tenantId, serviceId string) (name string, price float64, currency string, active bool, err error) {
+	if tenantId == "" || serviceId == "" {
+		return "", 0, "", false, ErrNotFound
+	}
+	item, e := m.GetItem(tenantId, serviceId)
+	if e != nil {
+		return "", 0, "", false, e
+	}
+	if item.Type != ItemTypeService {
+		return "", 0, "", false, ErrNotFound
+	}
+	return item.Name, item.Price, item.Currency, item.IsActive, nil
+}
+
 func (m *Module) ListAgreements(tenantId, catalogItemId string) ([]Agreement, error) {
 	var a Agreement
 	qb := m.db.Query(&a).Where(Agreement_.TenantId).Eq(tenantId)

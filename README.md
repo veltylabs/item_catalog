@@ -60,6 +60,10 @@ item, _ := module.CreateItem(itemcatalog.CatalogItem{
 | `upsert_agreement` | Create or update agreement |
 | `delete_agreement` | Delete agreement |
 
+## Readers (Cross-Module)
+- `ServiceExists(tenantId, serviceId string) (bool, error)`: Checks if a service exists and is active.
+- `ServiceCard(tenantId, serviceId string) (name string, price float64, currency string, active bool, err error)`: Gets service details for billing/booking.
+
 ## View and demo
 
 This module carries its own UI component (`ui/`), seed data (`seed/`), and runnable in-browser demo (`web/`).
