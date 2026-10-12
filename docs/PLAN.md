@@ -2,8 +2,9 @@
 PLAN: "feat: ServiceCard — nombre, precio de lista, moneda y estado de un servicio"
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 6641213984342180958
+PR: https://github.com/veltylabs/item_catalog/pull/10
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: agents-workflow.
