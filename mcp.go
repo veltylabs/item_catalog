@@ -20,7 +20,43 @@ const (
 	ErrSpecialtyInUse        domainError = "specialty in use"
 	ErrSpecialtyPrefixExists domainError = "specialty prefix already exists"
 	ErrSpecialtySlugExists   domainError = "specialty slug already exists"
+	ErrNoRecords             domainError = "item_catalog: no records to save"
+	ErrNoIds                 domainError = "item_catalog: no ids given"
 )
+
+// decodeError is a request body that could not be read: always 400.
+type decodeError struct{ err error }
+
+func (d decodeError) Error() string { return msgDecode + d.err.Error() }
+
+const msgDecode = "item_catalog: cannot read the request: "
+
+// writeError answers err with its status and, always, its text — the only thing an HTTP caller
+// sees. 400 = unreadable or invalid input · 404 = not found · 409 = conflict · 500 = anything else.
+func writeError(ctx router.Context, err error) {
+	ctx.WriteStatus(statusOf(err))
+	ctx.Write([]byte(err.Error()))
+}
+
+func statusOf(err error) int {
+	switch e := err.(type) {
+	case decodeError, ValidationError:
+		return 400
+	case domainError:
+		switch e {
+		case ErrNotFound, ErrSpecialtyNotFound:
+			return 404
+		case ErrAlreadyExists, ErrSpecialtyPrefixExists, ErrSpecialtySlugExists:
+			return 409
+		case ErrSpecialtyInUse, ErrNoRecords, ErrNoIds:
+			return 400
+		}
+	}
+	if orm.IsNotFound(err) {
+		return 404
+	}
+	return 500
+}
 
 const (
 	OpListSpecialties = "list_specialties"
@@ -681,12 +717,12 @@ var _ router.OperationModule = (*Module)(nil)
 func (m *Module) opListSpecialties(ctx router.Context) {
 	var args ListSpecialtiesArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	list, err := m.ListSpecialties(args.TenantId)
 	if err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 		return
 	}
 	resList := make(SpecialtyList, len(list))
@@ -694,81 +730,63 @@ func (m *Module) opListSpecialties(ctx router.Context) {
 		resList[i] = &list[i]
 	}
 	if err := ctx.Encode(&resList); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opGetSpecialty(ctx router.Context) {
 	var args GetSpecialtyArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	spec, err := m.GetSpecialty(args.TenantId, args.Id)
 	if err != nil {
-		if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	if err := ctx.Encode(&spec); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opUpsertSpecialty(ctx router.Context) {
 	var args UpsertSpecialtyArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if len(args.Records) == 0 {
-		ctx.WriteStatus(400)
+		writeError(ctx, ErrNoRecords)
 		return
 	}
 	var last Specialty
 	for _, spec := range args.Records {
 		out, err := m.UpsertSpecialty(spec)
 		if err != nil {
-			if _, ok := err.(ValidationError); ok {
-				ctx.WriteStatus(400)
-			} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyPrefixExists || e == ErrSpecialtySlugExists) {
-				ctx.WriteStatus(409)
-			} else if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
-				ctx.WriteStatus(404)
-			} else {
-				ctx.WriteStatus(500)
-			}
+			writeError(ctx, err)
 			return
 		}
 		last = out
 	}
 	if err := ctx.Encode(&last); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opDeleteSpecialty(ctx router.Context) {
 	var args DeleteSpecialtiesArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if len(args.Ids) == 0 {
-		ctx.WriteStatus(400)
+		writeError(ctx, ErrNoIds)
 		return
 	}
 	for _, id := range args.Ids {
 		if err := m.DeleteSpecialty("", id); err != nil {
-			if e, ok := err.(domainError); ok && (e == ErrSpecialtyNotFound || e == ErrNotFound) {
-				ctx.WriteStatus(404)
-			} else if e, ok := err.(domainError); ok && e == ErrSpecialtyInUse {
-				ctx.WriteStatus(400)
-			} else {
-				ctx.WriteStatus(500)
-			}
+			writeError(ctx, err)
 			return
 		}
 	}
@@ -778,13 +796,13 @@ func (m *Module) opDeleteSpecialty(ctx router.Context) {
 func (m *Module) opListItems(ctx router.Context) {
 	var args ListItemsArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	filter := ItemFilter{SpecialtyId: args.SpecialtyId, Type: args.Type, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
 	items, err := m.ListItems(args.TenantId, filter)
 	if err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 		return
 	}
 	list := make(CatalogItemList, len(items))
@@ -792,90 +810,72 @@ func (m *Module) opListItems(ctx router.Context) {
 		list[i] = &items[i]
 	}
 	if err := ctx.Encode(&list); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opGetItem(ctx router.Context) {
 	var args GetItemArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	item, err := m.GetItem(args.TenantId, args.Id)
 	if err != nil {
-		if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	if err := ctx.Encode(&item); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opFindItemBySKU(ctx router.Context) {
 	var args FindBySKUArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	item, err := m.FindBySKU(args.TenantId, args.Sku)
 	if err != nil {
-		if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	if err := ctx.Encode(&item); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opCreateItem(ctx router.Context) {
 	var item CatalogItem
 	if err := ctx.Decode(&item); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	created, err := m.CreateItem(item)
 	if err != nil {
-		if _, ok := err.(ValidationError); ok {
-			ctx.WriteStatus(400)
-		} else if e, ok := err.(domainError); ok && e == ErrAlreadyExists {
-			ctx.WriteStatus(409)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	if err := ctx.Encode(&created); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opUpdateItem(ctx router.Context) {
 	var args UpdateItemArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if len(args.Ids) == 0 {
-		ctx.WriteStatus(400)
+		writeError(ctx, ErrNoIds)
 		return
 	}
 	for _, id := range args.Ids {
 		existing, err := m.GetItem("", id)
 		if err != nil {
-			if e, ok := err.(domainError); ok && e == ErrNotFound {
-				ctx.WriteStatus(404)
-			} else {
-				ctx.WriteStatus(500)
-			}
+			writeError(ctx, err)
 			return
 		}
 		for _, f := range args.Fields {
@@ -897,7 +897,7 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 			}
 		}
 		if _, err := m.UpdateItem(existing); err != nil {
-			ctx.WriteStatus(400)
+			writeError(ctx, err)
 			return
 		}
 	}
@@ -907,11 +907,11 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 func (m *Module) opUpsertItem(ctx router.Context) {
 	var args UpsertItemArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if len(args.Records) == 0 {
-		ctx.WriteStatus(400)
+		writeError(ctx, ErrNoRecords)
 		return
 	}
 	var last CatalogItem
@@ -927,36 +927,24 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 			}
 		}
 		if err != nil {
-			if _, ok := err.(ValidationError); ok {
-				ctx.WriteStatus(400)
-			} else if e, ok := err.(domainError); ok && e == ErrAlreadyExists {
-				ctx.WriteStatus(409)
-			} else if e, ok := err.(domainError); ok && e == ErrNotFound {
-				ctx.WriteStatus(404)
-			} else {
-				ctx.WriteStatus(500)
-			}
+			writeError(ctx, err)
 			return
 		}
 		last = out
 	}
 	if err := ctx.Encode(&last); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opDeactivateItem(ctx router.Context) {
 	var args DeactivateItemArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if err := m.DeactivateItem(args.TenantId, args.Id); err != nil {
-		if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	ctx.WriteStatus(200)
@@ -965,20 +953,16 @@ func (m *Module) opDeactivateItem(ctx router.Context) {
 func (m *Module) opDeleteItem(ctx router.Context) {
 	var args DeleteItemsArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if len(args.Ids) == 0 {
-		ctx.WriteStatus(400)
+		writeError(ctx, ErrNoIds)
 		return
 	}
 	for _, id := range args.Ids {
 		if err := m.DeleteItem("", id); err != nil {
-			if e, ok := err.(domainError); ok && e == ErrNotFound {
-				ctx.WriteStatus(404)
-			} else {
-				ctx.WriteStatus(500)
-			}
+			writeError(ctx, err)
 			return
 		}
 	}
@@ -988,12 +972,12 @@ func (m *Module) opDeleteItem(ctx router.Context) {
 func (m *Module) opListAgreements(ctx router.Context) {
 	var args ListAgreementsArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	items, err := m.ListAgreements(args.TenantId, args.CatalogItemId)
 	if err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 		return
 	}
 	list := make(AgreementList, len(items))
@@ -1001,44 +985,34 @@ func (m *Module) opListAgreements(ctx router.Context) {
 		list[i] = &items[i]
 	}
 	if err := ctx.Encode(&list); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opUpsertAgreement(ctx router.Context) {
 	var a Agreement
 	if err := ctx.Decode(&a); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	out, err := m.UpsertAgreement(a)
 	if err != nil {
-		if _, ok := err.(ValidationError); ok {
-			ctx.WriteStatus(400)
-		} else if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	if err := ctx.Encode(&out); err != nil {
-		ctx.WriteStatus(500)
+		writeError(ctx, err)
 	}
 }
 
 func (m *Module) opDeleteAgreement(ctx router.Context) {
 	var args DeleteAgreementArgs
 	if err := ctx.Decode(&args); err != nil {
-		ctx.WriteStatus(400)
+		writeError(ctx, decodeError{err})
 		return
 	}
 	if err := m.DeleteAgreement(args.TenantId, args.Id); err != nil {
-		if e, ok := err.(domainError); ok && e == ErrNotFound {
-			ctx.WriteStatus(404)
-		} else {
-			ctx.WriteStatus(500)
-		}
+		writeError(ctx, err)
 		return
 	}
 	ctx.WriteStatus(200)
