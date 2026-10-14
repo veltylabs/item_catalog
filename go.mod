@@ -25,7 +25,7 @@ require (
 
 require (
 	webtyp.com/color v0.1.3 // indirect
-	webtyp.com/components v0.8.29 // indirect
+	webtyp.com/components v0.8.30 // indirect
 	webtyp.com/css v0.4.31 // indirect
 	webtyp.com/date v0.0.10 // indirect
 	webtyp.com/escape v0.1.0 // indirect
