@@ -14,6 +14,14 @@ This module is the reference for every screen of the platform (master plan `UI_C
 `webtyp/docs`, decisions D5, D6, D10, D15): what a module stores is a form field; nothing is drawn
 beside the screen title.
 
+## Tools — install before anything else
+
+```bash
+go install webtyp.com/devflow/cmd/gotest@latest
+go install webtyp.com/lang/cmd/langc@latest
+go install webtyp.com/ormc/cmd/ormc@latest
+```
+
 ## Problem
 
 The "Servicios" screen shows a specialty `<select>` next to the title (crudview `Context`), but the
