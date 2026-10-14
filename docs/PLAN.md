@@ -2,6 +2,8 @@
 PLAN: "feat!: specialty is a field of the item form; every field declares its Label"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 13751167751622351628
 ---
 
 > Read AGENTS.md at the repo root before any change.
