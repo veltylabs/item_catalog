@@ -62,7 +62,7 @@ func main() {
 	settingsMod := platformd.NewUIModule("settings", "Ajustes", ui.IconCatalog, dummySettingsView)
 
 	p := &platformd.Platform{
-		AppName:   ui.Label + " — demo",
+		AppName:   "WebTyp App Demo",
 		User:      demoUser{},
 		Modules:   []platformd.UIModule{homeMod, v, settingsMod},
 		DefaultID: ui.ID,
