@@ -81,3 +81,31 @@ func TestOpErrors_SayWhy(t *testing.T) {
 		wantRefused(t, ctx, 404, itemcatalog.ErrSpecialtyNotFound.Error())
 	})
 }
+
+func TestItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
+	module, err := itemcatalog.New(orm.New(mem.New()), itemcatalog.Deps{IDs: &MockIDGen{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = module.CreateItem(itemcatalog.CatalogItem{
+		TenantId: "t1",
+		Sku:      "SKU-99",
+		Name:     "Service X",
+		Type:     "S",
+		Price:    100,
+		Currency: "CLP",
+		IsActive: true,
+	})
+	if err == nil {
+		t.Fatal("expected CreateItem to fail when no specialty is provided")
+	}
+
+	list, err := module.ListItems("t1", itemcatalog.ItemFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 0 {
+		t.Fatalf("expected 0 items, got %d", len(list))
+	}
+}

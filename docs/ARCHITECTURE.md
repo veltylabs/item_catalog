@@ -22,7 +22,7 @@ The `item-catalog` module manages a unified catalog of services and products for
     - `events.Publisher` for event-driven updates (`Deps.Publisher`, optional — `nil` disables
       publishing silently).
     - `view.Presenter` (`NewView(caller router.Caller) view.Presenter`, `NewSpecialtyView(caller router.Caller) view.Presenter`) for UI, built with only
-      `view`+`model`+`router` — the app chooses the renderer.
+      `view`+`model`+`router` — the app chooses the renderer. The specialty is a form field loaded with `SetOptions`; no picker beside the title.
     - Tests run against `storage/mem`, never `tinywasm/sqlite`.
 - **Multi-tenancy**: Every specialty, item, and agreement is associated with a `tenant_id`. SKU, prefix, and slug uniqueness are enforced per tenant.
 - **Typed events**: every published event carries a `model.Encodable` payload (`&Specialty`/`&CatalogItem`/`&Agreement`),

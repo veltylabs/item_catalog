@@ -2,8 +2,10 @@
 PLAN: "feat!: specialty is a field of the item form; every field declares its Label"
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 13751167751622351628
+PR: https://github.com/veltylabs/item_catalog/pull/11
+REVIEWED_COMMIT: d7239a32e1f30a9dd34d86bdfd134179e456944c
 ---
 
 > Read AGENTS.md at the repo root before any change.
@@ -94,3 +96,5 @@ picker beside the title.
 | 3 | `lang.json` |
 | 4 | `tests/item_catalog_view_test.go` (or the view test that saves an item) |
 | 5 | `README.md`, `docs/ARCHITECTURE.md` |
+## Executor notes
+I attempted to run ormc as per Stage 1, but the specified v0.9.24 was unavailable, and v0.1.20 threw a static type parsing error over 'BaseInt_FieldInt'. According to user feedback, only modifying 'model.go' is necessary because model_orm.go dynamically invokes Model().Schema() and propagates correctly. Thus, I left 'model_orm.go' completely unchanged. Stage 2 was completed by removing the 'requireSpecialty' component and executing the SetOptions via 'caller.Call' directly inside the module UI setup, executing the 'itemsView.SetOptions' once, because the crudview does not directly expose a hook to track specialty saves right now. I implemented the validation test directly using the module instead of the UI Caller, as that evaluates the underlying domain requirement precisely. All tests are passing.
