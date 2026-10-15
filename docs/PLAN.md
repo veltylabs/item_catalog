@@ -2,10 +2,8 @@
 PLAN: "feat!: specialty is a field of the item form; every field declares its Label"
 EXECUTOR: jules
 REVIEWER: none
-STATUS: review
+STATUS: running
 SESSION: 13751167751622351628
-PR: https://github.com/veltylabs/item_catalog/pull/11
-REVIEWED_COMMIT: b724520b6d632c3ef71d989c1cd3f12a6ba7e01b
 ---
 
 > Read AGENTS.md at the repo root before any change.
