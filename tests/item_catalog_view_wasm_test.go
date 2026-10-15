@@ -89,7 +89,7 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 		Price: 100, Currency: "CLP", IsActive: true, UpdatedAt: 1,
 	}
 	// Una especialidad, para que el picker de Browser tenga algo que elegir
-	// y requireSpecialty.Save no rechace el guardado por falta de selección.
+	// y el campo specialty_id del formulario tenga opciones.
 	specialty := &itemcatalog.Specialty{Id: "spec-1", Name: "General"}
 
 	mock := &mockCaller{

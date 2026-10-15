@@ -2,12 +2,17 @@ package ui
 
 import (
 	itemcatalog "github.com/veltylabs/item_catalog"
+	"webtyp.com/dom"
 	"webtyp.com/fmt"
 	"webtyp.com/layout/crudview"
 	"webtyp.com/layout/platformd"
 	"webtyp.com/model"
 	"webtyp.com/router"
 )
+
+// errListSpecialties is logged when the specialty options cannot be loaded:
+// the form then has an empty select, never a silent one.
+const errListSpecialties = "item_catalog: could not load specialties for the item form:"
 
 // Browser construye la vista de este módulo para el registro en modules/browser.go.
 func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (platformd.UIModule, error) {
@@ -48,6 +53,7 @@ func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (plat
 	out := &itemcatalog.SpecialtyList{}
 	caller.Call(itemcatalog.ModelName+"."+itemcatalog.OpListSpecialties, nil, out, func(err error) {
 		if err != nil {
+			dom.Log(errListSpecialties, err)
 			return
 		}
 		var opts []fmt.KeyValue
@@ -62,4 +68,3 @@ func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (plat
 		specialtiesMod,
 	}), nil
 }
-
