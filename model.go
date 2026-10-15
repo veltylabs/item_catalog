@@ -36,9 +36,9 @@ var SpecialtyModel = model.Definition{
 	Fields: model.Fields{
 		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
-		{Name: "prefix", Type: input.Text(), NotNull: true,
+		{Name: "prefix", Type: input.Text(), Label: "Prefix", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Minimum: 2, Maximum: 2}},
-		{Name: "slug", Type: input.Text(), NotNull: true,
+		{Name: "slug", Type: input.Text(), Label: "Slug", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 60}},
 		// input.Text()'s own baseline Extra ('.', ',', '(', ')') no incluye
 		// '+' — "Dental (Odontología + Ortodoncia)" lo necesita, así que
@@ -46,9 +46,9 @@ var SpecialtyModel = model.Definition{
 		// del Kind (Field.Validate: un whitelist positivo propio reemplaza
 		// el floor de Text, no lo suma). Tilde cubre las vocales acentuadas
 		// sin listarlas una a una.
-		{Name: "name", Type: input.Text(), NotNull: true,
+		{Name: "name", Type: input.Text(), Label: "Name", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Tilde: true, Spaces: true, Extra: []rune{'+', '(', ')'}, Minimum: 1, Maximum: 100}},
-		{Name: "description", Type: input.Textarea(), OmitEmpty: true},
+		{Name: "description", Type: input.Textarea(), Label: "Description", OmitEmpty: true},
 		{Name: "position", Type: BaseInt_FieldInt, OmitEmpty: true},
 		// NotNull deliberadamente ausente: para un bool, NotNull rechaza el
 		// zero value (ValidateFields: field.NotNull && IsZeroPtr, y
@@ -56,7 +56,7 @@ var SpecialtyModel = model.Definition{
 		// imposible crear una especialidad SIN publicar, justo lo opuesto
 		// de "cerrado por defecto". El false-por-defecto ya lo garantiza
 		// el zero value de Go, no una restricción de esquema.
-		{Name: "is_published", Type: Checkbox_FieldBool},
+		{Name: "is_published", Type: Checkbox_FieldBool, Label: "Published"},
 		{Name: "updated_at", Type: BaseInt_FieldInt, OmitEmpty: true},
 	},
 }
@@ -66,14 +66,14 @@ var CatalogItemModel = model.Definition{
 	Fields: model.Fields{
 		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
-		{Name: "specialty_id", Type: model.Text(), Ref: &SpecialtyModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
-		{Name: "sku", Type: input.Text(), NotNull: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
-		{Name: "name", Type: input.Text(), NotNull: true, Permitted: model.Permitted{Minimum: 1, Maximum: 255}},
-		{Name: "description", Type: input.Textarea(), OmitEmpty: true},
-		{Name: "type", Type: itemType(), NotNull: true},
-		{Name: "price", Type: Decimal_FieldFloat, NotNull: true},
-		{Name: "currency", Type: input.Text(), NotNull: true, Permitted: model.Permitted{Letters: true, Minimum: 3, Maximum: 3}},
-		{Name: "is_active", Type: Checkbox_FieldBool, NotNull: true},
+		{Name: "specialty_id", Type: input.Select(), Label: "Specialty", Ref: &SpecialtyModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
+		{Name: "sku", Type: input.Text(), Label: "SKU", NotNull: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
+		{Name: "name", Type: input.Text(), Label: "Name", NotNull: true, Permitted: model.Permitted{Minimum: 1, Maximum: 255}},
+		{Name: "description", Type: input.Textarea(), Label: "Description", OmitEmpty: true},
+		{Name: "type", Type: itemType(), Label: "Type", NotNull: true},
+		{Name: "price", Type: Decimal_FieldFloat, Label: "Price", NotNull: true},
+		{Name: "currency", Type: input.Text(), Label: "Currency", NotNull: true, Permitted: model.Permitted{Letters: true, Minimum: 3, Maximum: 3}},
+		{Name: "is_active", Type: Checkbox_FieldBool, Label: "Active", NotNull: true},
 		{Name: "updated_at", Type: BaseInt_FieldInt, OmitEmpty: true},
 	},
 }
@@ -84,10 +84,10 @@ var AgreementModel = model.Definition{
 		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
 		{Name: "catalog_item_id", Type: model.Text(), Ref: &CatalogItemModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
-		{Name: "insurer", Type: input.Text(), NotNull: true, Permitted: model.Permitted{Letters: true, Spaces: true, Minimum: 1, Maximum: 100}},
-		{Name: "code", Type: input.Text(), OmitEmpty: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
-		{Name: "price", Type: Decimal_FieldFloat, OmitEmpty: true},
-		{Name: "is_active", Type: Checkbox_FieldBool, NotNull: true},
+		{Name: "insurer", Type: input.Text(), Label: "Insurer", NotNull: true, Permitted: model.Permitted{Letters: true, Spaces: true, Minimum: 1, Maximum: 100}},
+		{Name: "code", Type: input.Text(), Label: "Code", OmitEmpty: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
+		{Name: "price", Type: Decimal_FieldFloat, Label: "Price", OmitEmpty: true},
+		{Name: "is_active", Type: Checkbox_FieldBool, Label: "Active", NotNull: true},
 		{Name: "updated_at", Type: BaseInt_FieldInt, OmitEmpty: true},
 	},
 }

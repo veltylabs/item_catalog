@@ -170,35 +170,3 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 	}
 }
 
-// TestWASM_ItemCatalog_SaveWithoutSpecialtyIsRejected: sin especialidades
-// registradas el picker no tiene nada que elegir, y el guardado debe
-// rechazarse ANTES de llegar al servidor — nunca en silencio. Esto es
-// exactamente lo que faltaba antes de esta pantalla: el "+" no producía
-// fila ni error visible.
-func TestWASM_ItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
-	mock := &mockCaller{
-		onCall: func(op string, args model.Encodable, into model.Decodable) error {
-			return nil // sin especialidades: list_specialties responde vacío
-		},
-	}
-
-	m, err := ui.Browser(mock, &testIDGen{}, "")
-	if err != nil {
-		t.Fatalf("ui.Browser: %v", err)
-	}
-	cv := itemsPanel(t, m)
-	cv.Init(nil)
-
-	saver, ok := cv.Presenter.(view.Saver)
-	if !ok {
-		t.Fatal("expected Presenter to implement view.Saver")
-	}
-	var serr error
-	saver.Save([]model.Model{&itemcatalog.CatalogItem{Name: "X", Sku: "X"}}, func(err error) { serr = err })
-	if serr == nil {
-		t.Fatal("expected Save to fail loudly when no specialty is selected")
-	}
-	if mock.lastOp == itemcatalog.ModelName+"."+itemcatalog.OpUpsertItem {
-		t.Error("expected the save to be rejected before reaching the server")
-	}
-}

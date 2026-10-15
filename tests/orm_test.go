@@ -103,8 +103,8 @@ func TestFormInputsGeneration(t *testing.T) {
 
 	// We expect the form to contain editable input widgets for user-editable fields,
 	// and NOT for machine-managed fields (id, tenant_id, updated_at).
-	// specialty_id is a Ref field (model.Text()) not input.Input, so editable form input fields are:
-	editableFields := []string{"sku", "name", "description", "type", "price", "currency", "is_active"}
+	// specialty_id is an input.Select() field, so editable form input fields are:
+	editableFields := []string{"specialty_id", "sku", "name", "description", "type", "price", "currency", "is_active"}
 	for _, field := range f.Inputs {
 		name := field.FieldName()
 		isEditable := false
