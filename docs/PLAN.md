@@ -5,8 +5,7 @@ EXECUTOR: jules
 REVIEWER: none
 ---
 
-> **Do not dispatch until the owner has renamed the GitHub repository to `veltylabs/service_catalog` and moved the
-> local clone to `.../modules/service_catalog`.** This plan assumes the repository is already called `service_catalog`.
+> The GitHub repository is already named `veltylabs/service_catalog`; its `go.mod` still declares the old module path until Stage 1.
 
 > Read AGENTS.md at the repo root before any change.
 
