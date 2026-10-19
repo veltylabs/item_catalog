@@ -7,7 +7,7 @@ require (
 	webtyp.com/dom v0.13.26
 	webtyp.com/events v0.0.6
 	webtyp.com/fmt v1.0.0
-	webtyp.com/form v0.4.41
+	webtyp.com/form v0.4.43
 	webtyp.com/html v0.0.27
 	webtyp.com/input v0.0.21
 	webtyp.com/json v0.5.30
@@ -36,6 +36,5 @@ require (
 )
 
 // TEMP local verification of the form (columns, accent selection/focus) — remove before commit.
-replace webtyp.com/form => ../../../webtyp/form
 
 replace webtyp.com/layout => ../../../webtyp/layout
