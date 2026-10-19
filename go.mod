@@ -25,7 +25,7 @@ require (
 
 require (
 	webtyp.com/color v0.1.3 // indirect
-	webtyp.com/components v0.8.31 // indirect
+	webtyp.com/components v0.8.34 // indirect
 	webtyp.com/css v0.4.31 // indirect
 	webtyp.com/date v0.0.10 // indirect
 	webtyp.com/escape v0.1.0 // indirect
@@ -37,7 +37,5 @@ require (
 
 // TEMP local verification of the form (columns, accent selection/focus) — remove before commit.
 replace webtyp.com/form => ../../../webtyp/form
-
-replace webtyp.com/components => ../../../webtyp/components
 
 replace webtyp.com/layout => ../../../webtyp/layout
