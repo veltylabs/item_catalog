@@ -32,5 +32,12 @@ require (
 	webtyp.com/font v0.0.6 // indirect
 	webtyp.com/icons v0.0.26 // indirect
 	webtyp.com/lang v0.1.6 // indirect
-	webtyp.com/widget v0.6.42 // indirect
+	webtyp.com/widget v0.6.43 // indirect
 )
+
+// TEMP local verification of the form (columns, accent selection/focus) — remove before commit.
+replace webtyp.com/form => ../../../webtyp/form
+
+replace webtyp.com/components => ../../../webtyp/components
+
+replace webtyp.com/layout => ../../../webtyp/layout
