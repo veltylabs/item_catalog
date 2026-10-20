@@ -107,7 +107,7 @@ func (m *Module) UpsertSpecialty(spec Specialty) (Specialty, error) {
 	if spec.Id == "" {
 		spec.Id = m.ids.NewID()
 	}
-	spec.UpdatedAt = time.Now()
+	spec.UpdatedAt = time.NowNano()
 
 	if err := spec.Validate(action); err != nil {
 		return Specialty{}, ValidationError{Err: err}
@@ -264,7 +264,7 @@ func (m *Module) CreateService(item Service) (Service, error) {
 	if item.Id == "" {
 		item.Id = m.ids.NewID()
 	}
-	item.UpdatedAt = time.Now()
+	item.UpdatedAt = time.NowNano()
 
 	if err := item.Validate(model.ActionCreate); err != nil {
 		return Service{}, ValidationError{Err: err}
@@ -303,7 +303,7 @@ func (m *Module) UpdateService(item Service) (Service, error) {
 		item.TenantId = existing.TenantId
 	}
 
-	item.UpdatedAt = time.Now()
+	item.UpdatedAt = time.NowNano()
 	if err := m.db.Update(&item, orm.Eq(Service_.Id, item.Id), orm.Eq(Service_.TenantId, item.TenantId)); err != nil {
 		return Service{}, err
 	}
@@ -319,7 +319,7 @@ func (m *Module) DeactivateService(tenantId, id string) error {
 		return err
 	}
 	item.IsActive = false
-	item.UpdatedAt = time.Now()
+	item.UpdatedAt = time.NowNano()
 	if err := m.db.Update(&item, orm.Eq(Service_.Id, item.Id), orm.Eq(Service_.TenantId, item.TenantId)); err != nil {
 		return err
 	}
@@ -413,7 +413,7 @@ func (m *Module) UpsertServiceAgreement(a ServiceAgreement) (ServiceAgreement, e
 	if a.Id == "" {
 		a.Id = m.ids.NewID()
 	}
-	a.UpdatedAt = time.Now()
+	a.UpdatedAt = time.NowNano()
 
 	if err := a.Validate(action); err != nil {
 		return ServiceAgreement{}, ValidationError{Err: err}

@@ -62,7 +62,7 @@ func (m *Module) UpsertServiceSupply(s ServiceSupply) (ServiceSupply, error) {
 	} else {
 		s.Id = m.ids.NewID()
 	}
-	s.UpdatedAt = time.Now()
+	s.UpdatedAt = time.NowNano()
 	if err := s.Validate(action); err != nil {
 		return ServiceSupply{}, ValidationError{Err: err}
 	}
