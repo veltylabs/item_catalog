@@ -5,6 +5,7 @@ package servicecatalog
 import (
 	"webtyp.com/model"
 	"webtyp.com/orm"
+	"webtyp.com/time"
 )
 
 type Specialty struct {
@@ -16,7 +17,7 @@ type Specialty struct {
 	Description string
 	Position    int64
 	IsPublished bool
-	UpdatedAt   int64
+	UpdatedAt   time.Nano
 }
 
 func (m *Specialty) ModelName() string { return "specialty" }
@@ -24,7 +25,7 @@ func (m *Specialty) ModelName() string { return "specialty" }
 func (m *Specialty) Schema() []model.Field { return SpecialtyModel.Fields }
 
 func (m *Specialty) Pointers() []any {
-	return []any{&m.Id, &m.TenantId, &m.Prefix, &m.Slug, &m.Name, &m.Description, &m.Position, &m.IsPublished, &m.UpdatedAt}
+	return []any{&m.Id, &m.TenantId, &m.Prefix, &m.Slug, &m.Name, &m.Description, &m.Position, &m.IsPublished, (*int64)(&m.UpdatedAt)}
 }
 
 func (m *Specialty) IsNil() bool { return m == nil }
@@ -45,7 +46,7 @@ func (m *Specialty) EncodeFields(w model.FieldWriter) {
 	}
 	w.Bool("is_published", m.IsPublished)
 	if m.UpdatedAt != 0 {
-		w.Int("updated_at", m.UpdatedAt)
+		w.Int("updated_at", int64(m.UpdatedAt))
 	}
 }
 
@@ -75,7 +76,7 @@ func (m *Specialty) DecodeFields(r model.FieldReader) {
 		m.IsPublished = v
 	}
 	if v, ok := r.Int("updated_at"); ok {
-		m.UpdatedAt = v
+		m.UpdatedAt = time.Nano(v)
 	}
 }
 
@@ -142,7 +143,7 @@ type Service struct {
 	Price        float64
 	Currency     string
 	IsActive     bool
-	UpdatedAt    int64
+	UpdatedAt    time.Nano
 }
 
 func (m *Service) ModelName() string { return "service" }
@@ -150,7 +151,7 @@ func (m *Service) ModelName() string { return "service" }
 func (m *Service) Schema() []model.Field { return ServiceModel.Fields }
 
 func (m *Service) Pointers() []any {
-	return []any{&m.Id, &m.TenantId, &m.SpecialtyId, &m.Sku, &m.Name, &m.Description, &m.TaxTreatment, &m.Price, &m.Currency, &m.IsActive, &m.UpdatedAt}
+	return []any{&m.Id, &m.TenantId, &m.SpecialtyId, &m.Sku, &m.Name, &m.Description, &m.TaxTreatment, &m.Price, &m.Currency, &m.IsActive, (*int64)(&m.UpdatedAt)}
 }
 
 func (m *Service) IsNil() bool { return m == nil }
@@ -173,7 +174,7 @@ func (m *Service) EncodeFields(w model.FieldWriter) {
 	w.String("currency", m.Currency)
 	w.Bool("is_active", m.IsActive)
 	if m.UpdatedAt != 0 {
-		w.Int("updated_at", m.UpdatedAt)
+		w.Int("updated_at", int64(m.UpdatedAt))
 	}
 }
 
@@ -209,7 +210,7 @@ func (m *Service) DecodeFields(r model.FieldReader) {
 		m.IsActive = v
 	}
 	if v, ok := r.Int("updated_at"); ok {
-		m.UpdatedAt = v
+		m.UpdatedAt = time.Nano(v)
 	}
 }
 
@@ -283,7 +284,7 @@ type ServiceAgreement struct {
 	Code      string
 	Price     float64
 	IsActive  bool
-	UpdatedAt int64
+	UpdatedAt time.Nano
 }
 
 func (m *ServiceAgreement) ModelName() string { return "service_agreement" }
@@ -291,7 +292,7 @@ func (m *ServiceAgreement) ModelName() string { return "service_agreement" }
 func (m *ServiceAgreement) Schema() []model.Field { return ServiceAgreementModel.Fields }
 
 func (m *ServiceAgreement) Pointers() []any {
-	return []any{&m.Id, &m.TenantId, &m.ServiceId, &m.Insurer, &m.Code, &m.Price, &m.IsActive, &m.UpdatedAt}
+	return []any{&m.Id, &m.TenantId, &m.ServiceId, &m.Insurer, &m.Code, &m.Price, &m.IsActive, (*int64)(&m.UpdatedAt)}
 }
 
 func (m *ServiceAgreement) IsNil() bool { return m == nil }
@@ -311,7 +312,7 @@ func (m *ServiceAgreement) EncodeFields(w model.FieldWriter) {
 	}
 	w.Bool("is_active", m.IsActive)
 	if m.UpdatedAt != 0 {
-		w.Int("updated_at", m.UpdatedAt)
+		w.Int("updated_at", int64(m.UpdatedAt))
 	}
 }
 
@@ -338,7 +339,7 @@ func (m *ServiceAgreement) DecodeFields(r model.FieldReader) {
 		m.IsActive = v
 	}
 	if v, ok := r.Int("updated_at"); ok {
-		m.UpdatedAt = v
+		m.UpdatedAt = time.Nano(v)
 	}
 }
 
@@ -408,7 +409,7 @@ type ServiceSupply struct {
 	ServiceId string
 	ItemId    string
 	Quantity  float64
-	UpdatedAt int64
+	UpdatedAt time.Nano
 }
 
 func (m *ServiceSupply) ModelName() string { return "service_supply" }
@@ -416,7 +417,7 @@ func (m *ServiceSupply) ModelName() string { return "service_supply" }
 func (m *ServiceSupply) Schema() []model.Field { return ServiceSupplyModel.Fields }
 
 func (m *ServiceSupply) Pointers() []any {
-	return []any{&m.Id, &m.TenantId, &m.ServiceId, &m.ItemId, &m.Quantity, &m.UpdatedAt}
+	return []any{&m.Id, &m.TenantId, &m.ServiceId, &m.ItemId, &m.Quantity, (*int64)(&m.UpdatedAt)}
 }
 
 func (m *ServiceSupply) IsNil() bool { return m == nil }
@@ -430,7 +431,7 @@ func (m *ServiceSupply) EncodeFields(w model.FieldWriter) {
 	w.String("item_id", m.ItemId)
 	w.Float("quantity", m.Quantity)
 	if m.UpdatedAt != 0 {
-		w.Int("updated_at", m.UpdatedAt)
+		w.Int("updated_at", int64(m.UpdatedAt))
 	}
 }
 
@@ -451,7 +452,7 @@ func (m *ServiceSupply) DecodeFields(r model.FieldReader) {
 		m.Quantity = v
 	}
 	if v, ok := r.Int("updated_at"); ok {
-		m.UpdatedAt = v
+		m.UpdatedAt = time.Nano(v)
 	}
 }
 

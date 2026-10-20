@@ -45,7 +45,7 @@ var SpecialtyModel = model.Definition{
 		// de "cerrado por defecto". El false-por-defecto ya lo garantiza
 		// el zero value de Go, no una restricción de esquema.
 		{Name: "is_published", Type: input.Checkbox(), Label: "Published"},
-		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
+		{Name: "updated_at", Type: model.NanoTime(), OmitEmpty: true},
 	},
 }
 
@@ -62,7 +62,7 @@ var ServiceModel = model.Definition{
 		{Name: "price", Type: input.Decimal(), Label: "Price", NotNull: true},
 		{Name: "currency", Type: input.Text(), Label: "Currency", NotNull: true, Permitted: model.Permitted{Letters: true, Minimum: 3, Maximum: 3}},
 		{Name: "is_active", Type: input.Checkbox(), Label: "Active", NotNull: true},
-		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
+		{Name: "updated_at", Type: model.NanoTime(), OmitEmpty: true},
 	},
 }
 
@@ -76,7 +76,7 @@ var ServiceAgreementModel = model.Definition{
 		{Name: "code", Type: input.Text(), Label: "Code", OmitEmpty: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
 		{Name: "price", Type: input.Decimal(), Label: "Price", OmitEmpty: true},
 		{Name: "is_active", Type: input.Checkbox(), Label: "Active", NotNull: true},
-		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
+		{Name: "updated_at", Type: model.NanoTime(), OmitEmpty: true},
 	},
 }
 
@@ -90,7 +90,7 @@ var ServiceSupplyModel = model.Definition{
 		{Name: "service_id", Type: model.Text(), Ref: &ServiceModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
 		{Name: "item_id", Type: model.Text(), NotNull: true},
 		{Name: "quantity", Type: input.Decimal(), Label: "Quantity", NotNull: true},
-		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
+		{Name: "updated_at", Type: model.NanoTime(), OmitEmpty: true},
 	},
 }
 
