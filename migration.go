@@ -72,7 +72,7 @@ func (m *Module) MigrateSpecialtiesAndServices(tenantId string) (MigrationReport
 		}
 	}
 
-	items, err := m.ListItems(tenantId, ServiceFilter{})
+	items, err := m.ListServices(tenantId, ServiceFilter{})
 	if err != nil {
 		return report, err
 	}
@@ -90,7 +90,7 @@ func (m *Module) MigrateSpecialtiesAndServices(tenantId string) (MigrationReport
 		}
 
 		item.SpecialtyId = specID
-		_, err := m.UpdateItem(item)
+		_, err := m.UpdateService(item)
 		if err != nil {
 			return report, fmt.Err("failed to update item %s: %w", item.Id, err)
 		}

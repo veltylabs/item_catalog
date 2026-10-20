@@ -33,7 +33,7 @@ func itemsPanel(t *testing.T, mod platformd.UIModule) *crudview.CrudView {
 	return cv
 }
 
-func TestWASM_ItemCatalog_View(t *testing.T) {
+func TestWASM_ServiceCatalog_View(t *testing.T) {
 	var calledOps []string
 	mock := &mockCaller{
 		onCall: func(op string, args model.Encodable, into model.Decodable) error {
@@ -73,13 +73,13 @@ func TestWASM_ItemCatalog_View(t *testing.T) {
 	}
 }
 
-// TestWASM_ItemCatalog_SaveAndDelete es el test que habría atrapado el bug
+// TestWASM_ServiceCatalog_SaveAndDelete es el test que habría atrapado el bug
 // METHOD_NOT_FOUND del camino de escritura: prueba que seleccionar una
 // tarjeta llena el formulario desde el registro cacheado, y que
 // Save/Delete despachan las ops reales (upsert_service /
 // delete_service) con los datos del registro, no el nombre de la tool
 // como método RPC pelado.
-func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
+func TestWASM_ServiceCatalog_SaveAndDelete(t *testing.T) {
 	seed := &servicecatalog.Service{
 		Id: "svc1", TenantId: "tenant1", Sku: "SKU1", Name: "Service One",
 		Description: "General consultation service",

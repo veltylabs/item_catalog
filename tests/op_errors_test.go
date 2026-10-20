@@ -88,7 +88,7 @@ func TestItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = module.CreateItem(servicecatalog.Service{
+	_, err = module.CreateService(servicecatalog.Service{
 		TenantId: "t1",
 		Sku:      "SKU-99",
 		Name:     "Service X",
@@ -97,10 +97,10 @@ func TestItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
 		IsActive: true,
 	})
 	if err == nil {
-		t.Fatal("expected CreateItem to fail when no specialty is provided")
+		t.Fatal("expected CreateService to fail when no specialty is provided")
 	}
 
-	list, err := module.ListItems("t1", servicecatalog.ServiceFilter{})
+	list, err := module.ListServices("t1", servicecatalog.ServiceFilter{})
 	if err != nil {
 		t.Fatal(err)
 	}

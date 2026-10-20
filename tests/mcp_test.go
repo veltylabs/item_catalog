@@ -179,7 +179,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 5. Upsert item via OP (Create with empty ID)
-	upsertItem := servicecatalog.Service{
+	upsertService := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: createdSpec.Id,
 		Sku:         "md-M2",
@@ -189,7 +189,7 @@ func TestMCPOperations(t *testing.T) {
 		IsActive:    true,
 	}
 	upsertArgs := servicecatalog.UpsertServiceArgs{
-		Records: []servicecatalog.Service{upsertItem},
+		Records: []servicecatalog.Service{upsertService},
 	}
 	var upsertBytes []byte
 	_ = json.Encode(&upsertArgs, &upsertBytes)

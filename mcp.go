@@ -81,10 +81,10 @@ const (
 	TopicSpecialtyUpdated = "catalog.specialty.updated"
 	TopicSpecialtyDeleted = "catalog.specialty.deleted"
 
-	TopicItemCreated             = "catalog.service.created"
-	TopicItemUpdated             = "catalog.service.updated"
-	TopicItemDeactivated         = "catalog.service.deactivated"
-	TopicItemDeleted             = "catalog.service.deleted"
+	TopicServiceCreated          = "catalog.service.created"
+	TopicServiceUpdated          = "catalog.service.updated"
+	TopicServiceDeactivated      = "catalog.service.deactivated"
+	TopicServiceDeleted          = "catalog.service.deleted"
 	TopicServiceAgreementCreated = "catalog.service_agreement.created"
 	TopicServiceAgreementUpdated = "catalog.service_agreement.updated"
 	TopicServiceAgreementDeleted = "catalog.service_agreement.deleted"
@@ -279,7 +279,7 @@ func (m *Module) DeleteSpecialty(tenantId, id string) error {
 
 // Service methods
 
-func (m *Module) GetItem(tenantId, id string) (Service, error) {
+func (m *Module) GetService(tenantId, id string) (Service, error) {
 	var item Service
 	qb := m.db.Query(&item).Where(Service_.Id).Eq(id)
 	if tenantId != "" {
@@ -308,7 +308,7 @@ func (m *Module) FindBySKU(tenantId, sku string) (Service, error) {
 	return item, nil
 }
 
-func (m *Module) ListItems(tenantId string, filter ServiceFilter) ([]Service, error) {
+func (m *Module) ListServices(tenantId string, filter ServiceFilter) ([]Service, error) {
 	var item Service
 	qb := m.db.Query(&item).Where(Service_.TenantId).Eq(tenantId)
 	if filter.SpecialtyId != "" {
@@ -335,7 +335,7 @@ func (m *Module) ListItems(tenantId string, filter ServiceFilter) ([]Service, er
 	return items, nil
 }
 
-func (m *Module) CreateItem(item Service) (Service, error) {
+func (m *Module) CreateService(item Service) (Service, error) {
 	if item.Id == "" {
 		item.Id = m.ids.NewID()
 	}
@@ -359,18 +359,18 @@ func (m *Module) CreateItem(item Service) (Service, error) {
 		return Service{}, err
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicItemCreated, Payload: &item})
+		m.pub.Publish(events.Event{Topic: TopicServiceCreated, Payload: &item})
 	}
 	return item, nil
 }
 
-func (m *Module) UpdateItem(item Service) (Service, error) {
+func (m *Module) UpdateService(item Service) (Service, error) {
 	if err := item.Validate(model.ActionUpdate); err != nil {
 		return Service{}, ValidationError{Err: err}
 	}
 
 	// Verify item exists and belongs to tenant
-	existing, err := m.GetItem(item.TenantId, item.Id)
+	existing, err := m.GetService(item.TenantId, item.Id)
 	if err != nil {
 		return Service{}, err
 	}
@@ -383,13 +383,13 @@ func (m *Module) UpdateItem(item Service) (Service, error) {
 		return Service{}, err
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicItemUpdated, Payload: &item})
+		m.pub.Publish(events.Event{Topic: TopicServiceUpdated, Payload: &item})
 	}
 	return item, nil
 }
 
-func (m *Module) DeactivateItem(tenantId, id string) error {
-	item, err := m.GetItem(tenantId, id)
+func (m *Module) DeactivateService(tenantId, id string) error {
+	item, err := m.GetService(tenantId, id)
 	if err != nil {
 		return err
 	}
@@ -399,13 +399,13 @@ func (m *Module) DeactivateItem(tenantId, id string) error {
 		return err
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicItemDeactivated, Payload: &item})
+		m.pub.Publish(events.Event{Topic: TopicServiceDeactivated, Payload: &item})
 	}
 	return nil
 }
 
-func (m *Module) DeleteItem(tenantId, id string) error {
-	item, err := m.GetItem(tenantId, id)
+func (m *Module) DeleteService(tenantId, id string) error {
+	item, err := m.GetService(tenantId, id)
 	if err != nil {
 		return err
 	}
@@ -419,13 +419,13 @@ func (m *Module) DeleteItem(tenantId, id string) error {
 		}
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicItemDeleted, Payload: &item})
+		m.pub.Publish(events.Event{Topic: TopicServiceDeleted, Payload: &item})
 	}
 	return nil
 }
 
 func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
-	item, err := m.GetItem(tenantId, serviceId)
+	item, err := m.GetService(tenantId, serviceId)
 	if err != nil {
 		if e, ok := err.(domainError); ok && e == ErrNotFound {
 			return false, nil
@@ -442,7 +442,7 @@ func (m *Module) ServiceCard(tenantId, serviceId string) (name string, price flo
 	if tenantId == "" || serviceId == "" {
 		return "", 0, "", false, ErrNotFound
 	}
-	item, e := m.GetItem(tenantId, serviceId)
+	item, e := m.GetService(tenantId, serviceId)
 	if e != nil {
 		return "", 0, "", false, e
 	}
@@ -450,11 +450,11 @@ func (m *Module) ServiceCard(tenantId, serviceId string) (name string, price flo
 	return item.Name, item.Price, item.Currency, item.IsActive, nil
 }
 
-func (m *Module) ListServiceAgreements(tenantId, catalogItemId string) ([]ServiceAgreement, error) {
+func (m *Module) ListServiceAgreements(tenantId, serviceId string) ([]ServiceAgreement, error) {
 	var a ServiceAgreement
 	qb := m.db.Query(&a).Where(ServiceAgreement_.TenantId).Eq(tenantId)
-	if catalogItemId != "" {
-		qb = qb.Where(ServiceAgreement_.ServiceId).Eq(catalogItemId)
+	if serviceId != "" {
+		qb = qb.Where(ServiceAgreement_.ServiceId).Eq(serviceId)
 	}
 	results, err := ReadAllServiceAgreement(qb)
 	if err != nil {
@@ -688,14 +688,14 @@ func (m *Module) MountOperations(reg router.OperationRegistry) {
 	reg.Operation(OpUpsertSpecialty, m.opUpsertSpecialty).Requires("specialty", model.Create|model.Update).Accepts(&UpsertSpecialtyArgs{})
 	reg.Operation(OpDeleteSpecialty, m.opDeleteSpecialty).Requires("specialty", model.Delete).Accepts(&DeleteSpecialtiesArgs{})
 
-	reg.Operation(OpListServices, m.opListItems).Requires("service", model.Read).Accepts(&ListServicesArgs{})
-	reg.Operation(OpGetService, m.opGetItem).Requires("service", model.Read).Accepts(&GetServiceArgs{})
-	reg.Operation(OpFindServiceBySKU, m.opFindItemBySKU).Requires("service", model.Read).Accepts(&FindServiceBySKUArgs{})
-	reg.Operation(OpCreateService, m.opCreateItem).Requires("service", model.Create).Accepts(&Service{})
-	reg.Operation(OpUpdateService, m.opUpdateItem).Requires("service", model.Update).Accepts(&UpdateServiceArgs{})
-	reg.Operation(OpUpsertService, m.opUpsertItem).Requires("service", model.Create|model.Update).Accepts(&UpsertServiceArgs{})
-	reg.Operation(OpDeactivateService, m.opDeactivateItem).Requires("service", model.Update).Accepts(&DeactivateServiceArgs{})
-	reg.Operation(OpDeleteService, m.opDeleteItem).Requires("service", model.Delete).Accepts(&DeleteServicesArgs{})
+	reg.Operation(OpListServices, m.opListServices).Requires("service", model.Read).Accepts(&ListServicesArgs{})
+	reg.Operation(OpGetService, m.opGetService).Requires("service", model.Read).Accepts(&GetServiceArgs{})
+	reg.Operation(OpFindServiceBySKU, m.opFindServiceBySKU).Requires("service", model.Read).Accepts(&FindServiceBySKUArgs{})
+	reg.Operation(OpCreateService, m.opCreateService).Requires("service", model.Create).Accepts(&Service{})
+	reg.Operation(OpUpdateService, m.opUpdateService).Requires("service", model.Update).Accepts(&UpdateServiceArgs{})
+	reg.Operation(OpUpsertService, m.opUpsertService).Requires("service", model.Create|model.Update).Accepts(&UpsertServiceArgs{})
+	reg.Operation(OpDeactivateService, m.opDeactivateService).Requires("service", model.Update).Accepts(&DeactivateServiceArgs{})
+	reg.Operation(OpDeleteService, m.opDeleteService).Requires("service", model.Delete).Accepts(&DeleteServicesArgs{})
 
 	reg.Operation(OpListAgreements, m.opListServiceAgreements).Requires("service_agreement", model.Read).Accepts(&ListAgreementsArgs{})
 	reg.Operation(OpUpsertAgreement, m.opUpsertServiceAgreement).Requires("service_agreement", model.Create|model.Update).Accepts(&ServiceAgreement{})
@@ -783,14 +783,14 @@ func (m *Module) opDeleteSpecialty(ctx router.Context) {
 	ctx.WriteStatus(200)
 }
 
-func (m *Module) opListItems(ctx router.Context) {
+func (m *Module) opListServices(ctx router.Context) {
 	var args ListServicesArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
 	filter := ServiceFilter{SpecialtyId: args.SpecialtyId, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
-	items, err := m.ListItems(args.TenantId, filter)
+	items, err := m.ListServices(args.TenantId, filter)
 	if err != nil {
 		writeError(ctx, err)
 		return
@@ -804,13 +804,13 @@ func (m *Module) opListItems(ctx router.Context) {
 	}
 }
 
-func (m *Module) opGetItem(ctx router.Context) {
+func (m *Module) opGetService(ctx router.Context) {
 	var args GetServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	item, err := m.GetItem(args.TenantId, args.Id)
+	item, err := m.GetService(args.TenantId, args.Id)
 	if err != nil {
 		writeError(ctx, err)
 		return
@@ -820,7 +820,7 @@ func (m *Module) opGetItem(ctx router.Context) {
 	}
 }
 
-func (m *Module) opFindItemBySKU(ctx router.Context) {
+func (m *Module) opFindServiceBySKU(ctx router.Context) {
 	var args FindServiceBySKUArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
@@ -836,13 +836,13 @@ func (m *Module) opFindItemBySKU(ctx router.Context) {
 	}
 }
 
-func (m *Module) opCreateItem(ctx router.Context) {
+func (m *Module) opCreateService(ctx router.Context) {
 	var item Service
 	if err := ctx.Decode(&item); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	created, err := m.CreateItem(item)
+	created, err := m.CreateService(item)
 	if err != nil {
 		writeError(ctx, err)
 		return
@@ -852,7 +852,7 @@ func (m *Module) opCreateItem(ctx router.Context) {
 	}
 }
 
-func (m *Module) opUpdateItem(ctx router.Context) {
+func (m *Module) opUpdateService(ctx router.Context) {
 	var args UpdateServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
@@ -863,7 +863,7 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 		return
 	}
 	for _, id := range args.Ids {
-		existing, err := m.GetItem("", id)
+		existing, err := m.GetService("", id)
 		if err != nil {
 			writeError(ctx, err)
 			return
@@ -884,7 +884,7 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 				existing.SpecialtyId = args.Record.SpecialtyId
 			}
 		}
-		if _, err := m.UpdateItem(existing); err != nil {
+		if _, err := m.UpdateService(existing); err != nil {
 			writeError(ctx, err)
 			return
 		}
@@ -892,7 +892,7 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 	ctx.WriteStatus(200)
 }
 
-func (m *Module) opUpsertItem(ctx router.Context) {
+func (m *Module) opUpsertService(ctx router.Context) {
 	var args UpsertServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
@@ -907,11 +907,11 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 		var out Service
 		var err error
 		if item.Id == "" {
-			out, err = m.CreateItem(item)
+			out, err = m.CreateService(item)
 		} else {
-			out, err = m.UpdateItem(item)
+			out, err = m.UpdateService(item)
 			if err != nil && (err == ErrNotFound || orm.IsNotFound(err)) {
-				out, err = m.CreateItem(item)
+				out, err = m.CreateService(item)
 			}
 		}
 		if err != nil {
@@ -925,20 +925,20 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 	}
 }
 
-func (m *Module) opDeactivateItem(ctx router.Context) {
+func (m *Module) opDeactivateService(ctx router.Context) {
 	var args DeactivateServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	if err := m.DeactivateItem(args.TenantId, args.Id); err != nil {
+	if err := m.DeactivateService(args.TenantId, args.Id); err != nil {
 		writeError(ctx, err)
 		return
 	}
 	ctx.WriteStatus(200)
 }
 
-func (m *Module) opDeleteItem(ctx router.Context) {
+func (m *Module) opDeleteService(ctx router.Context) {
 	var args DeleteServicesArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
@@ -949,7 +949,7 @@ func (m *Module) opDeleteItem(ctx router.Context) {
 		return
 	}
 	for _, id := range args.Ids {
-		if err := m.DeleteItem("", id); err != nil {
+		if err := m.DeleteService("", id); err != nil {
 			writeError(ctx, err)
 			return
 		}

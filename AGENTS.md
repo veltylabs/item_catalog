@@ -220,7 +220,7 @@ for "what does a compliant module actually look like," read this repo's `.go` fi
 docs. Two things specific to this module:
 
 - Two entities, one parent-child relation: `Service` (service or product) and `Agreement`
-  (insurer billing agreement, child of a `Service` by soft reference `catalog_item_id`). Both are
+  (insurer billing agreement, child of a `Service` by soft reference `service_id`). Both are
   tenant-scoped.
 - `ServiceExists(tenantId, serviceId string) (bool, error)` exists solely to satisfy
   `appointment_booking`'s `CatalogReader` port — it is the one method here written for a consumer

@@ -40,7 +40,7 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 	}
 
 	// Create service
-	item, err := module.CreateItem(servicecatalog.Service{
+	item, err := module.CreateService(servicecatalog.Service{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Sku:         "sku",
@@ -105,7 +105,7 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	activeItem, err := module.CreateItem(servicecatalog.Service{
+	activeItem, err := module.CreateService(servicecatalog.Service{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Sku:         "sku1",
@@ -118,7 +118,7 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	inactiveItem, err := module.CreateItem(servicecatalog.Service{
+	inactiveItem, err := module.CreateService(servicecatalog.Service{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
 		Sku:         "sku2",

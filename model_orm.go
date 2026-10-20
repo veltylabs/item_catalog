@@ -466,7 +466,7 @@ type ListServicesArgs struct {
 	Offset      int64
 }
 
-func (m *ListServicesArgs) ModelName() string { return "list_items_args" }
+func (m *ListServicesArgs) ModelName() string { return "list_services_args" }
 
 func (m *ListServicesArgs) Schema() []model.Field { return ListServicesArgsModel.Fields }
 

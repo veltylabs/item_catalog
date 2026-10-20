@@ -35,7 +35,7 @@ func TestCatalog(t *testing.T) {
 		t.Fatalf("failed to create specialty: %v", err)
 	}
 
-	// Test CreateItem
+	// Test CreateService
 	item := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: spec.Id,
@@ -46,7 +46,7 @@ func TestCatalog(t *testing.T) {
 		IsActive:    true,
 	}
 
-	created, err := module.CreateItem(item)
+	created, err := module.CreateService(item)
 	if err != nil {
 		t.Fatalf("failed to create item: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test duplicate SKU
-	_, err = module.CreateItem(item)
+	_, err = module.CreateService(item)
 	if err == nil {
 		t.Error("expected error for duplicate SKU")
 	}
@@ -69,8 +69,8 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected ID %s, got %s", created.Id, found.Id)
 	}
 
-	// Test GetItem
-	found, err = module.GetItem(tenantID, created.Id)
+	// Test GetService
+	found, err = module.GetService(tenantID, created.Id)
 	if err != nil {
 		t.Errorf("failed to get item: %v", err)
 	}
@@ -84,9 +84,9 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected ServiceExists to be true, got %v, err: %v", exists, err)
 	}
 
-	// Test UpdateItem
+	// Test UpdateService
 	created.Name = "Updated Name"
-	updated, err := module.UpdateItem(created)
+	updated, err := module.UpdateService(created)
 	if err != nil {
 		t.Errorf("failed to update item: %v", err)
 	}
@@ -94,8 +94,8 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected Name Updated Name, got %s", updated.Name)
 	}
 
-	// Test ListItems
-	items, err := module.ListItems(tenantID, servicecatalog.ServiceFilter{})
+	// Test ListServices
+	items, err := module.ListServices(tenantID, servicecatalog.ServiceFilter{})
 	if err != nil {
 		t.Errorf("failed to list items: %v", err)
 	}
@@ -123,13 +123,13 @@ func TestCatalog(t *testing.T) {
 		Currency:    "USD",
 		IsActive:    true,
 	}
-	created2, err := module.CreateItem(item2)
+	created2, err := module.CreateService(item2)
 	if err != nil {
 		t.Fatalf("failed to create item 2: %v", err)
 	}
 
-	// Test ListItems with filter matching spec1
-	filteredItems, err := module.ListItems(tenantID, servicecatalog.ServiceFilter{
+	// Test ListServices with filter matching spec1
+	filteredItems, err := module.ListServices(tenantID, servicecatalog.ServiceFilter{
 		SpecialtyId: spec.Id,
 		ActiveOnly:  true,
 		Limit:       5,
@@ -142,8 +142,8 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected 1 item with specialty spec1 ID %s, got %d items", created.Id, len(filteredItems))
 	}
 
-	// Test ListItems with filter matching spec2
-	filteredItems2, err := module.ListItems(tenantID, servicecatalog.ServiceFilter{
+	// Test ListServices with filter matching spec2
+	filteredItems2, err := module.ListServices(tenantID, servicecatalog.ServiceFilter{
 		SpecialtyId: spec2.Id,
 	})
 	if err != nil {
@@ -154,7 +154,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Clean up second item and specialty for rest of test flow
-	if err := module.DeleteItem(tenantID, created2.Id); err != nil {
+	if err := module.DeleteService(tenantID, created2.Id); err != nil {
 		t.Fatalf("failed to delete item 2: %v", err)
 	}
 	if err := module.DeleteSpecialty(tenantID, spec2.Id); err != nil {
@@ -167,12 +167,12 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected ErrSpecialtyInUse, got %v", err)
 	}
 
-	// Test DeactivateItem
-	err = module.DeactivateItem(tenantID, created.Id)
+	// Test DeactivateService
+	err = module.DeactivateService(tenantID, created.Id)
 	if err != nil {
 		t.Errorf("failed to deactivate item: %v", err)
 	}
-	deactivated, _ := module.GetItem(tenantID, created.Id)
+	deactivated, _ := module.GetService(tenantID, created.Id)
 	if deactivated.IsActive {
 		t.Error("expected item to be inactive")
 	}
@@ -183,12 +183,12 @@ func TestCatalog(t *testing.T) {
 		t.Errorf("expected ServiceExists to be false for inactive, got %v", exists)
 	}
 
-	// Test DeleteItem
-	err = module.DeleteItem(tenantID, created.Id)
+	// Test DeleteService
+	err = module.DeleteService(tenantID, created.Id)
 	if err != nil {
 		t.Errorf("failed to delete item: %v", err)
 	}
-	_, err = module.GetItem(tenantID, created.Id)
+	_, err = module.GetService(tenantID, created.Id)
 	if err == nil {
 		t.Error("expected error getting deleted item")
 	}
@@ -314,7 +314,7 @@ func TestMigration(t *testing.T) {
 	}
 
 	// Verify item 1 has specialty_id set to "md" specialty ID
-	migrated1, err := module.GetItem(tenantID, "unmigrated-1")
+	migrated1, err := module.GetService(tenantID, "unmigrated-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -331,7 +331,7 @@ func TestMigration(t *testing.T) {
 	}
 
 	// Verify item 2 specialty_id is still empty
-	migrated2, err := module.GetItem(tenantID, "unmigrated-2")
+	migrated2, err := module.GetService(tenantID, "unmigrated-2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -374,7 +374,7 @@ func TestServiceAgreements(t *testing.T) {
 		Currency:    "USD",
 		IsActive:    true,
 	}
-	createdItem, err := module.CreateItem(goodItem)
+	createdItem, err := module.CreateService(goodItem)
 	if err != nil {
 		t.Fatalf("failed to create parent item: %v", err)
 	}
@@ -533,7 +533,7 @@ func TestTaxTreatmentValidation(t *testing.T) {
 		IsActive:     true,
 		TaxTreatment: servicecatalog.TaxTaxed,
 	}
-	if _, err := module.CreateItem(s2); err != nil {
+	if _, err := module.CreateService(s2); err != nil {
 		t.Errorf("expected success for TAXED, got %v", err)
 	}
 }

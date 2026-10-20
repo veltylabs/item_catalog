@@ -73,7 +73,7 @@ func Load(m *servicecatalog.Module, tenantID string) (Data, error) {
 			return data, fmt.Err("seed: specialty id not found", specDef.slug)
 		}
 
-		createdItem, err := m.CreateItem(servicecatalog.Service{
+		createdItem, err := m.CreateService(servicecatalog.Service{
 			TenantId:    tenantID,
 			SpecialtyId: specID,
 			Sku:         specDef.sku,
@@ -83,7 +83,7 @@ func Load(m *servicecatalog.Module, tenantID string) (Data, error) {
 			IsActive:    true,
 		})
 		if err != nil {
-			return data, fmt.Err("seed: CreateItem", specDef.sku, err)
+			return data, fmt.Err("seed: CreateService", specDef.sku, err)
 		}
 		data.Items = append(data.Items, createdItem)
 	}

@@ -7,8 +7,8 @@ import (
 )
 
 // Migrate reconciles the database schema service_catalog owns: Specialty,
-// CatalogItem and Agreement, in FK dependency order (Agreement references
-// CatalogItem, CatalogItem references Specialty).
+// Service and ServiceAgreement, in FK dependency order (ServiceAgreement references
+// Service, Service references Specialty).
 //
 // It is deliberately NOT called by New, and deliberately lives in its own
 // package rather than a new file in the root package: nothing on a

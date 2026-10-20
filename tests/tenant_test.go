@@ -48,13 +48,13 @@ func TestTenantIsolation(t *testing.T) {
 		IsActive:    true,
 	}
 
-	createdA, err := module.CreateItem(itemA)
+	createdA, err := module.CreateService(itemA)
 	if err != nil {
 		t.Fatalf("failed to create tenant A item: %v", err)
 	}
 
 	// 1. Tenant B must NOT be able to Get tenant A's item
-	_, err = module.GetItem(tenantB, createdA.Id)
+	_, err = module.GetService(tenantB, createdA.Id)
 	if err == nil || err.Error() != servicecatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B getting tenant A's item, got %v", err)
 	}
@@ -62,7 +62,7 @@ func TestTenantIsolation(t *testing.T) {
 	// 2. Tenant B must NOT be able to Update tenant A's item
 	createdA.TenantId = tenantB
 	createdA.Name = "Hijacked Name"
-	_, err = module.UpdateItem(createdA)
+	_, err = module.UpdateService(createdA)
 	if err == nil || err.Error() != servicecatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B updating tenant A's item, got %v", err)
 	}
@@ -71,13 +71,13 @@ func TestTenantIsolation(t *testing.T) {
 	createdA.TenantId = tenantA
 
 	// 3. Tenant B must NOT be able to Deactivate tenant A's item
-	err = module.DeactivateItem(tenantB, createdA.Id)
+	err = module.DeactivateService(tenantB, createdA.Id)
 	if err == nil || err.Error() != servicecatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B deactivating tenant A's item, got %v", err)
 	}
 
 	// 4. Tenant B must NOT be able to Delete tenant A's item
-	err = module.DeleteItem(tenantB, createdA.Id)
+	err = module.DeleteService(tenantB, createdA.Id)
 	if err == nil || err.Error() != servicecatalog.ErrNotFound.Error() {
 		t.Errorf("expected ErrNotFound for tenant B deleting tenant A's item, got %v", err)
 	}

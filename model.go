@@ -91,7 +91,7 @@ var ServiceFilterModel = model.Definition{
 }
 
 var ListServicesArgsModel = model.Definition{
-	Name: "list_items_args",
+	Name: "list_services_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
 		{Name: "specialty_id", Type: model.Text()},
