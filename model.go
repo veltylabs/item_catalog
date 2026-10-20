@@ -26,7 +26,7 @@ var SpecialtyModel = model.Definition{
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
 		{Name: "prefix", Type: input.Text(), Label: "Prefix", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Minimum: 2, Maximum: 2}},
-		{Name: "slug", Type: input.Text(), Label: "Slug", NotNull: true,
+		{Name: "slug", Type: input.Text(), Label: "Reference code", Help: "A short internal code to identify this specialty, not shown to patients. Lowercase words separated by dashes, e.g. cardiology.", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 60}},
 		// input.Text()'s own baseline Extra ('.', ',', '(', ')') no incluye
 		// '+' — "Dental (Odontología + Ortodoncia)" lo necesita, así que
