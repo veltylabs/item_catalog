@@ -34,5 +34,3 @@ require (
 	webtyp.com/lang v0.1.7 // indirect
 	webtyp.com/widget v0.6.43 // indirect
 )
-
-// TEMP local verification of the form (columns, accent selection/focus) — remove before commit.
