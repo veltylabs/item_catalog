@@ -3,8 +3,8 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
-	"github.com/veltylabs/item_catalog/ui"
+	servicecatalog "github.com/veltylabs/service_catalog"
+	"github.com/veltylabs/service_catalog/ui"
 	"webtyp.com/json"
 	"webtyp.com/layout/crudview"
 	"webtyp.com/layout/platformd"
@@ -13,7 +13,6 @@ import (
 	"webtyp.com/view"
 )
 
-
 func TestView_Creation(t *testing.T) {
 	mock := &mockCaller{}
 	m, err := ui.Browser(mock, &testIDGen{}, "")
@@ -21,8 +20,8 @@ func TestView_Creation(t *testing.T) {
 		t.Fatalf("ui.Browser: %v", err)
 	}
 
-	if m.ModelName() != "catalog_item" {
-		t.Errorf("expected ModelName %q, got %q", "catalog_item", m.ModelName())
+	if m.ModelName() != "service_catalog" {
+		t.Errorf("expected ModelName %q, got %q", "service_catalog", m.ModelName())
 	}
 	if m.Label() != "Catálogo" {
 		t.Errorf("expected Label %q, got %q", "Catálogo", m.Label())
@@ -32,8 +31,8 @@ func TestView_Creation(t *testing.T) {
 func TestView_LoadList(t *testing.T) {
 	mock := &mockCaller{
 		onCall: func(op string, args model.Encodable, into model.Decodable) error {
-			if op == itemcatalog.ModelName+"."+itemcatalog.OpListItems {
-				list := itemcatalog.CatalogItemList{
+			if op == servicecatalog.ModelName+"."+servicecatalog.OpListServices {
+				list := servicecatalog.ServiceList{
 					{Id: "1", Name: "Service One", Sku: "SKU1"},
 					{Id: "2", Name: "Service Two", Sku: "SKU2"},
 				}
@@ -74,8 +73,8 @@ func TestView_LoadList(t *testing.T) {
 	cv.Init(nil)
 	m.Activate()
 
-	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpListItems {
-		t.Errorf("expected last op %q, got %q", itemcatalog.ModelName+"."+itemcatalog.OpListItems, mock.lastOp)
+	if mock.lastOp != servicecatalog.ModelName+"."+servicecatalog.OpListServices {
+		t.Errorf("expected last op %q, got %q", servicecatalog.ModelName+"."+servicecatalog.OpListServices, mock.lastOp)
 	}
 }
 
@@ -130,15 +129,14 @@ func TestView_UsesNotifierAndCRUD(t *testing.T) {
 	}
 }
 
-
 func TestView_AddSaveItemWorkflow(t *testing.T) {
-	var savedItems []*itemcatalog.CatalogItem
+	var savedItems []*servicecatalog.Service
 	mock := &mockCaller{
 		onCall: func(op string, args model.Encodable, into model.Decodable) error {
 			t.Logf("onCall: op=%s, args=%T (%+v)", op, args, args)
 			switch op {
-			case itemcatalog.ModelName + "." + itemcatalog.OpListItems:
-				list := itemcatalog.CatalogItemList{}
+			case servicecatalog.ModelName + "." + servicecatalog.OpListServices:
+				list := servicecatalog.ServiceList{}
 				for _, it := range savedItems {
 					list = append(list, it)
 				}
@@ -147,21 +145,21 @@ func TestView_AddSaveItemWorkflow(t *testing.T) {
 					return err
 				}
 				return json.Decode(string(out), into)
-			case itemcatalog.ModelName + "." + itemcatalog.OpListSpecialties:
-				list := itemcatalog.SpecialtyList{
-					&itemcatalog.Specialty{Id: "spec-1", Name: "Medicina General"},
+			case servicecatalog.ModelName + "." + servicecatalog.OpListSpecialties:
+				list := servicecatalog.SpecialtyList{
+					&servicecatalog.Specialty{Id: "spec-1", Name: "Medicina General"},
 				}
 				var out []byte
 				if err := json.Encode(&list, &out); err != nil {
 					return err
 				}
 				return json.Decode(string(out), into)
-			case itemcatalog.ModelName + "." + itemcatalog.OpUpsertItem:
+			case servicecatalog.ModelName + "." + servicecatalog.OpUpsertService:
 				var out []byte
 				if err := json.Encode(args, &out); err != nil {
 					return err
 				}
-				var upsertArgs itemcatalog.UpsertItemArgs
+				var upsertArgs servicecatalog.UpsertServiceArgs
 				if err := json.Decode(string(out), &upsertArgs); err != nil {
 					return err
 				}
@@ -189,7 +187,7 @@ func TestView_AddSaveItemWorkflow(t *testing.T) {
 	m.Activate()
 
 	// Sku & Name entered
-	rec := servicesCv.NewRecord().(*itemcatalog.CatalogItem)
+	rec := servicesCv.NewRecord().(*servicecatalog.Service)
 	rec.Sku = "SKU-99"
 	rec.Name = "Servicio Neurología"
 

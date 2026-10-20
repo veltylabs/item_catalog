@@ -1,4 +1,4 @@
-module github.com/veltylabs/item_catalog
+module github.com/veltylabs/service_catalog
 
 go 1.26.8
 
@@ -7,7 +7,7 @@ require (
 	webtyp.com/dom v0.13.26
 	webtyp.com/events v0.1.0
 	webtyp.com/fmt v1.0.0
-	webtyp.com/form v0.4.43
+	webtyp.com/form v0.4.44
 	webtyp.com/html v0.0.27
 	webtyp.com/input v0.0.21
 	webtyp.com/json v0.5.30
@@ -25,7 +25,7 @@ require (
 
 require (
 	webtyp.com/color v0.1.3 // indirect
-	webtyp.com/components v0.8.34 // indirect
+	webtyp.com/components v0.8.35 // indirect
 	webtyp.com/css v0.4.31 // indirect
 	webtyp.com/date v0.0.10 // indirect
 	webtyp.com/escape v0.1.0 // indirect
@@ -36,11 +36,3 @@ require (
 )
 
 // TEMP local verification of the form (columns, accent selection/focus) — remove before commit.
-
-replace webtyp.com/form => ../../../webtyp/form
-
-replace webtyp.com/components => ../../../webtyp/components
-
-replace webtyp.com/widget => ../../../webtyp/widget
-
-replace webtyp.com/layout => ../../../webtyp/layout

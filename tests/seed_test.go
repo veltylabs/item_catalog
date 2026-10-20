@@ -3,8 +3,8 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
-	"github.com/veltylabs/item_catalog/seed"
+	servicecatalog "github.com/veltylabs/service_catalog"
+	"github.com/veltylabs/service_catalog/seed"
 	"webtyp.com/events/mock"
 	"webtyp.com/orm"
 	"webtyp.com/storage/mem"
@@ -15,7 +15,7 @@ func TestSeedLoad(t *testing.T) {
 	broker := &mock.Broker{}
 	idGen := &testIDGen{}
 
-	m, err := itemcatalog.New(db, itemcatalog.Deps{
+	m, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs:       idGen,
 		Publisher: broker,
 	})

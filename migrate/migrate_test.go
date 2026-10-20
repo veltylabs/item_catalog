@@ -3,7 +3,7 @@ package migrate_test
 import (
 	"testing"
 
-	"github.com/veltylabs/item_catalog/migrate"
+	"github.com/veltylabs/service_catalog/migrate"
 	"webtyp.com/ddl"
 	"webtyp.com/model"
 )
@@ -27,7 +27,7 @@ func TestMigrate_CreatesAllThreeTablesInOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Migrate returned error: %v", err)
 	}
-	want := []string{"specialty", "catalog_item", "catalog_agreement"}
+	want := []string{"specialty", "service", "service_agreement"}
 	if len(execer.calls) != len(want) {
 		t.Fatalf("got %d Exec calls, want %d: %v", len(execer.calls), len(want), execer.calls)
 	}

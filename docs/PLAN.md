@@ -3,8 +3,10 @@ PLAN: "feat!: service_catalog v0.1.0 — item_catalog becomes the services-and-s
 TAG: v0.1.0
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 2505385731027524456
+PR: https://github.com/veltylabs/service_catalog/pull/12
+REVIEWED_COMMIT: d406ae5760cbc5cb9803973409786887a2a7c070
 ---
 
 > The GitHub repository is already named `veltylabs/service_catalog`; its `go.mod` still declares the old module path until Stage 1.

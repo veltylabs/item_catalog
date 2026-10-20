@@ -5,15 +5,14 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
-	"github.com/veltylabs/item_catalog/ui"
+	servicecatalog "github.com/veltylabs/service_catalog"
+	"github.com/veltylabs/service_catalog/ui"
 	"webtyp.com/json"
 	"webtyp.com/layout/crudview"
 	"webtyp.com/layout/platformd"
 	"webtyp.com/model"
 	"webtyp.com/view"
 )
-
 
 // itemsPanel reaches the "Servicios" child's own *crudview.CrudView. Browser
 // returns a platformd.GroupModule containing Servicios and Especialidades as submodules.
@@ -34,14 +33,13 @@ func itemsPanel(t *testing.T, mod platformd.UIModule) *crudview.CrudView {
 	return cv
 }
 
-
-func TestWASM_ItemCatalog_View(t *testing.T) {
+func TestWASM_ServiceCatalog_View(t *testing.T) {
 	var calledOps []string
 	mock := &mockCaller{
 		onCall: func(op string, args model.Encodable, into model.Decodable) error {
 			calledOps = append(calledOps, op)
-			if op == itemcatalog.ModelName+"."+itemcatalog.OpListItems {
-				list := itemcatalog.CatalogItemList{
+			if op == servicecatalog.ModelName+"."+servicecatalog.OpListServices {
+				list := servicecatalog.ServiceList{
 					{Id: "1", Name: "Service One", Sku: "SKU1"},
 					{Id: "2", Name: "Service Two", Sku: "SKU2"},
 				}
@@ -62,46 +60,45 @@ func TestWASM_ItemCatalog_View(t *testing.T) {
 	cv.Init(nil)
 	m.Activate()
 
-	// Verifica que list_catalog_items se llamó en Init
+	// Verifica que list_services se llamó en Init
 	found := false
 	for _, op := range calledOps {
-		if op == itemcatalog.ModelName+"."+itemcatalog.OpListItems {
+		if op == servicecatalog.ModelName+"."+servicecatalog.OpListServices {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Errorf("expected OpListItems to be called on init, ops=%v", calledOps)
+		t.Errorf("expected OpListServices to be called on init, ops=%v", calledOps)
 	}
 }
 
-// TestWASM_ItemCatalog_SaveAndDelete es el test que habría atrapado el bug
+// TestWASM_ServiceCatalog_SaveAndDelete es el test que habría atrapado el bug
 // METHOD_NOT_FOUND del camino de escritura: prueba que seleccionar una
 // tarjeta llena el formulario desde el registro cacheado, y que
-// Save/Delete despachan las ops reales (upsert_catalog_item /
-// delete_catalog_item) con los datos del registro, no el nombre de la tool
+// Save/Delete despachan las ops reales (upsert_service /
+// delete_service) con los datos del registro, no el nombre de la tool
 // como método RPC pelado.
-func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
-	seed := &itemcatalog.CatalogItem{
+func TestWASM_ServiceCatalog_SaveAndDelete(t *testing.T) {
+	seed := &servicecatalog.Service{
 		Id: "svc1", TenantId: "tenant1", Sku: "SKU1", Name: "Service One",
 		Description: "General consultation service",
-		SpecialtyId: "spec-1", Type: "S",
-		Price: 100, Currency: "CLP", IsActive: true, UpdatedAt: 1,
+		Price:       100, Currency: "CLP", IsActive: true, UpdatedAt: 1,
 	}
 	// Una especialidad, para que el picker de Browser tenga algo que elegir
 	// y el campo specialty_id del formulario tenga opciones.
-	specialty := &itemcatalog.Specialty{Id: "spec-1", Name: "General"}
+	specialty := &servicecatalog.Specialty{Id: "spec-1", Name: "General"}
 
 	mock := &mockCaller{
 		onCall: func(op string, args model.Encodable, into model.Decodable) error {
 			switch op {
-			case itemcatalog.ModelName + "." + itemcatalog.OpListItems:
-				list := itemcatalog.CatalogItemList{seed}
+			case servicecatalog.ModelName + "." + servicecatalog.OpListServices:
+				list := servicecatalog.ServiceList{seed}
 				var out []byte
 				_ = json.Encode(&list, &out)
 				return json.Decode(string(out), into)
-			case itemcatalog.ModelName + "." + itemcatalog.OpListSpecialties:
-				list := itemcatalog.SpecialtyList{specialty}
+			case servicecatalog.ModelName + "." + servicecatalog.OpListSpecialties:
+				list := servicecatalog.SpecialtyList{specialty}
 				var out []byte
 				_ = json.Encode(&list, &out)
 				return json.Decode(string(out), into)
@@ -123,7 +120,7 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 	// cacheado (byID). Los selectAction/saveAction/deleteAction propios de
 	// CrudView son no exportados — manejar Presenter directamente ejercita
 	// el mismo camino real de despacho de ops que este test protege
-	// (upsert_catalog_item / delete_catalog_item, no el nombre de la tool
+	// (upsert_service / delete_service, no el nombre de la tool
 	// como método RPC pelado) sin necesitar un click de DOM.
 	record := cv.Presenter.Select(seed.Id)
 	if record == nil {
@@ -139,8 +136,8 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 	if serr != nil {
 		t.Fatalf("Save: %v", serr)
 	}
-	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpUpsertItem {
-		t.Errorf("expected last op %q after save, got %q", itemcatalog.ModelName+"."+itemcatalog.OpUpsertItem, mock.lastOp)
+	if mock.lastOp != servicecatalog.ModelName+"."+servicecatalog.OpUpsertService {
+		t.Errorf("expected last op %q after save, got %q", servicecatalog.ModelName+"."+servicecatalog.OpUpsertService, mock.lastOp)
 	}
 
 	updater, ok := cv.Presenter.(view.Updater)
@@ -152,8 +149,8 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 	if uerr != nil {
 		t.Fatalf("Update: %v", uerr)
 	}
-	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpUpdateItem {
-		t.Errorf("expected last op %q after update, got %q", itemcatalog.ModelName+"."+itemcatalog.OpUpdateItem, mock.lastOp)
+	if mock.lastOp != servicecatalog.ModelName+"."+servicecatalog.OpUpdateService {
+		t.Errorf("expected last op %q after update, got %q", servicecatalog.ModelName+"."+servicecatalog.OpUpdateService, mock.lastOp)
 	}
 
 	deleter, ok := cv.Presenter.(view.Deleter)
@@ -165,8 +162,7 @@ func TestWASM_ItemCatalog_SaveAndDelete(t *testing.T) {
 	if derr != nil {
 		t.Fatalf("Delete: %v", derr)
 	}
-	if mock.lastOp != itemcatalog.ModelName+"."+itemcatalog.OpDeleteItem {
-		t.Errorf("expected last op %q after delete, got %q", itemcatalog.ModelName+"."+itemcatalog.OpDeleteItem, mock.lastOp)
+	if mock.lastOp != servicecatalog.ModelName+"."+servicecatalog.OpDeleteService {
+		t.Errorf("expected last op %q after delete, got %q", servicecatalog.ModelName+"."+servicecatalog.OpDeleteService, mock.lastOp)
 	}
 }
-

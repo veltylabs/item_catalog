@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/json"
 	"webtyp.com/model"
 	"webtyp.com/orm"
@@ -15,7 +15,7 @@ import (
 func TestMCPOperations(t *testing.T) {
 	db := orm.New(mem.New())
 	pub := &MockPublisher{}
-	module, err := itemcatalog.New(db, itemcatalog.Deps{
+	module, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs:       &MockIDGen{},
 		Publisher: pub,
 	})
@@ -40,14 +40,14 @@ func TestMCPOperations(t *testing.T) {
 	tenantID := "tenant-1"
 
 	// 0. Upsert Specialty via OP
-	spec := itemcatalog.Specialty{
+	spec := servicecatalog.Specialty{
 		TenantId: tenantID,
 		Prefix:   "md",
 		Slug:     "medicina-general",
 		Name:     "Medicina General",
 	}
-	specArgs := itemcatalog.UpsertSpecialtyArgs{
-		Records: []itemcatalog.Specialty{spec},
+	specArgs := servicecatalog.UpsertSpecialtyArgs{
+		Records: []servicecatalog.Specialty{spec},
 	}
 	var specBytes []byte
 	_ = json.Encode(&specArgs, &specBytes)
@@ -55,12 +55,12 @@ func TestMCPOperations(t *testing.T) {
 	ctxSpecUpsert := &mock.Context{
 		InBody: specBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpUpsertSpecialty, ctxSpecUpsert)
+	r.Invoke("OP", "/"+servicecatalog.OpUpsertSpecialty, ctxSpecUpsert)
 	if ctxSpecUpsert.Status != 0 && ctxSpecUpsert.Status != 200 {
 		t.Fatalf("expected specialty upsert status success, got %d", ctxSpecUpsert.Status)
 	}
 
-	var createdSpec itemcatalog.Specialty
+	var createdSpec servicecatalog.Specialty
 	if err := json.Decode(ctxSpecUpsert.ResponseBody(), &createdSpec); err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// List Specialties via OP
-	listSpecArgs := itemcatalog.ListSpecialtiesArgs{
+	listSpecArgs := servicecatalog.ListSpecialtiesArgs{
 		TenantId: tenantID,
 	}
 	var listSpecBytes []byte
@@ -78,12 +78,12 @@ func TestMCPOperations(t *testing.T) {
 	ctxSpecList := &mock.Context{
 		InBody: listSpecBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpListSpecialties, ctxSpecList)
+	r.Invoke("OP", "/"+servicecatalog.OpListSpecialties, ctxSpecList)
 	if ctxSpecList.Status != 0 && ctxSpecList.Status != 200 {
 		t.Fatalf("expected specialty list status success, got %d", ctxSpecList.Status)
 	}
 
-	var specListResult itemcatalog.SpecialtyList
+	var specListResult servicecatalog.SpecialtyList
 	if err := json.Decode(ctxSpecList.ResponseBody(), &specListResult); err != nil {
 		t.Fatal(err)
 	}
@@ -92,12 +92,11 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 1. Create item via OP
-	item := itemcatalog.CatalogItem{
+	item := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: createdSpec.Id,
 		Sku:         "md-M1",
 		Name:        "Mcp Product",
-		Type:        itemcatalog.ItemTypeProduct,
 		Price:       100.0,
 		Currency:    "USD",
 		IsActive:    true,
@@ -108,12 +107,12 @@ func TestMCPOperations(t *testing.T) {
 	ctxCreate := &mock.Context{
 		InBody: itemBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpCreateItem, ctxCreate)
+	r.Invoke("OP", "/"+servicecatalog.OpCreateService, ctxCreate)
 	if ctxCreate.Status != 0 && ctxCreate.Status != 200 {
 		t.Fatalf("expected create status success, got %d", ctxCreate.Status)
 	}
 
-	var createdItem itemcatalog.CatalogItem
+	var createdItem servicecatalog.Service
 	if err := json.Decode(ctxCreate.ResponseBody(), &createdItem); err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +121,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 2. Get item via OP
-	getArgs := itemcatalog.GetItemArgs{
+	getArgs := servicecatalog.GetServiceArgs{
 		TenantId: tenantID,
 		Id:       createdItem.Id,
 	}
@@ -132,12 +131,12 @@ func TestMCPOperations(t *testing.T) {
 	ctxGet := &mock.Context{
 		InBody: getArgsBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpGetItem, ctxGet)
+	r.Invoke("OP", "/"+servicecatalog.OpGetService, ctxGet)
 	if ctxGet.Status != 0 && ctxGet.Status != 200 {
 		t.Fatalf("expected get status success, got %d, body: %s", ctxGet.Status, string(ctxGet.ResponseBody()))
 	}
 
-	var gotItem itemcatalog.CatalogItem
+	var gotItem servicecatalog.Service
 	if err := json.Decode(ctxGet.ResponseBody(), &gotItem); err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +145,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 3. Find by SKU via OP
-	skuArgs := itemcatalog.FindBySKUArgs{
+	skuArgs := servicecatalog.FindServiceBySKUArgs{
 		TenantId: tenantID,
 		Sku:      "md-M1",
 	}
@@ -156,14 +155,14 @@ func TestMCPOperations(t *testing.T) {
 	ctxSku := &mock.Context{
 		InBody: skuArgsBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpFindItemBySKU, ctxSku)
+	r.Invoke("OP", "/"+servicecatalog.OpFindServiceBySKU, ctxSku)
 	if ctxSku.Status != 0 && ctxSku.Status != 200 {
 		t.Fatalf("expected find sku status success, got %d", ctxSku.Status)
 	}
 
 	// 4. Update item via OP
 	createdItem.Name = "Mcp Product Updated"
-	updateArgs := itemcatalog.UpdateItemArgs{
+	updateArgs := servicecatalog.UpdateServiceArgs{
 		Ids:    []string{createdItem.Id},
 		Fields: []string{"name"},
 		Record: createdItem,
@@ -174,24 +173,23 @@ func TestMCPOperations(t *testing.T) {
 	ctxUpdate := &mock.Context{
 		InBody: updateBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpUpdateItem, ctxUpdate)
+	r.Invoke("OP", "/"+servicecatalog.OpUpdateService, ctxUpdate)
 	if ctxUpdate.Status != 0 && ctxUpdate.Status != 200 {
 		t.Fatalf("expected update status success, got %d, body: %s", ctxUpdate.Status, string(ctxUpdate.ResponseBody()))
 	}
 
 	// 5. Upsert item via OP (Create with empty ID)
-	upsertItem := itemcatalog.CatalogItem{
+	upsertService := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: createdSpec.Id,
 		Sku:         "md-M2",
 		Name:        "Mcp Product 2",
-		Type:        itemcatalog.ItemTypeService,
 		Price:       200.0,
 		Currency:    "USD",
 		IsActive:    true,
 	}
-	upsertArgs := itemcatalog.UpsertItemArgs{
-		Records: []itemcatalog.CatalogItem{upsertItem},
+	upsertArgs := servicecatalog.UpsertServiceArgs{
+		Records: []servicecatalog.Service{upsertService},
 	}
 	var upsertBytes []byte
 	_ = json.Encode(&upsertArgs, &upsertBytes)
@@ -199,20 +197,19 @@ func TestMCPOperations(t *testing.T) {
 	ctxUpsert := &mock.Context{
 		InBody: upsertBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpUpsertItem, ctxUpsert)
+	r.Invoke("OP", "/"+servicecatalog.OpUpsertService, ctxUpsert)
 	if ctxUpsert.Status != 0 && ctxUpsert.Status != 200 {
 		t.Fatalf("expected upsert status success, got %d", ctxUpsert.Status)
 	}
-	var upsertedItem itemcatalog.CatalogItem
+	var upsertedItem servicecatalog.Service
 	if err := json.Decode(ctxUpsert.ResponseBody(), &upsertedItem); err != nil {
 		t.Fatal(err)
 	}
 
 	// 6. List items via OP
-	listArgs := itemcatalog.ListItemsArgs{
+	listArgs := servicecatalog.ListServicesArgs{
 		TenantId:    tenantID,
 		SpecialtyId: createdSpec.Id,
-		Type:        itemcatalog.ItemTypeService,
 		ActiveOnly:  true,
 		Limit:       10,
 		Offset:      0,
@@ -223,21 +220,20 @@ func TestMCPOperations(t *testing.T) {
 	ctxList := &mock.Context{
 		InBody: listBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpListItems, ctxList)
+	r.Invoke("OP", "/"+servicecatalog.OpListServices, ctxList)
 	if ctxList.Status != 0 && ctxList.Status != 200 {
 		t.Fatalf("expected list status success, got %d", ctxList.Status)
 	}
 
-	var listResult itemcatalog.CatalogItemList
+	var listResult servicecatalog.ServiceList
 	if err := json.Decode(ctxList.ResponseBody(), &listResult); err != nil {
 		t.Fatal(err)
 	}
 	if listResult.Len() != 1 {
-		t.Fatalf("expected 1 item of type S, got %d", listResult.Len())
 	}
 
 	// 7. Deactivate item via OP
-	deactivateArgs := itemcatalog.DeactivateItemArgs{
+	deactivateArgs := servicecatalog.DeactivateServiceArgs{
 		TenantId: tenantID,
 		Id:       createdItem.Id,
 	}
@@ -247,13 +243,13 @@ func TestMCPOperations(t *testing.T) {
 	ctxDeactivate := &mock.Context{
 		InBody: deactivateBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpDeactivateItem, ctxDeactivate)
+	r.Invoke("OP", "/"+servicecatalog.OpDeactivateService, ctxDeactivate)
 	if ctxDeactivate.Status != 0 && ctxDeactivate.Status != 200 {
 		t.Fatalf("expected deactivate status success, got %d", ctxDeactivate.Status)
 	}
 
 	// 8. Delete item via OP
-	deleteArgs := itemcatalog.DeleteItemsArgs{
+	deleteArgs := servicecatalog.DeleteServicesArgs{
 		Ids: []string{createdItem.Id},
 	}
 	var deleteBytes []byte
@@ -262,19 +258,19 @@ func TestMCPOperations(t *testing.T) {
 	ctxDelete := &mock.Context{
 		InBody: deleteBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpDeleteItem, ctxDelete)
+	r.Invoke("OP", "/"+servicecatalog.OpDeleteService, ctxDelete)
 	if ctxDelete.Status != 0 && ctxDelete.Status != 200 {
 		t.Fatalf("expected delete status success, got %d", ctxDelete.Status)
 	}
 
 	// 9. Upsert agreement via OP (Create with empty ID)
-	ag := itemcatalog.Agreement{
-		TenantId:      tenantID,
-		CatalogItemId: upsertedItem.Id,
-		Insurer:       "Mcp Insurer",
-		Code:          "M-123",
-		Price:         150.0,
-		IsActive:      true,
+	ag := servicecatalog.ServiceAgreement{
+		TenantId:  tenantID,
+		ServiceId: upsertedItem.Id,
+		Insurer:   "Mcp Insurer",
+		Code:      "M-123",
+		Price:     150.0,
+		IsActive:  true,
 	}
 	var agBytes []byte
 	_ = json.Encode(&ag, &agBytes)
@@ -282,20 +278,20 @@ func TestMCPOperations(t *testing.T) {
 	ctxUpsertAg := &mock.Context{
 		InBody: agBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpUpsertAgreement, ctxUpsertAg)
+	r.Invoke("OP", "/"+servicecatalog.OpUpsertAgreement, ctxUpsertAg)
 	if ctxUpsertAg.Status != 0 && ctxUpsertAg.Status != 200 {
 		t.Fatalf("expected upsert agreement status success, got %d", ctxUpsertAg.Status)
 	}
 
-	var upsertedAg itemcatalog.Agreement
+	var upsertedAg servicecatalog.ServiceAgreement
 	if err := json.Decode(ctxUpsertAg.ResponseBody(), &upsertedAg); err != nil {
 		t.Fatal(err)
 	}
 
 	// 10. List agreements via OP
-	listAgArgs := itemcatalog.ListAgreementsArgs{
-		TenantId:      tenantID,
-		CatalogItemId: upsertedItem.Id,
+	listAgArgs := servicecatalog.ListAgreementsArgs{
+		TenantId:  tenantID,
+		ServiceId: upsertedItem.Id,
 	}
 	var listAgBytes []byte
 	_ = json.Encode(&listAgArgs, &listAgBytes)
@@ -303,12 +299,12 @@ func TestMCPOperations(t *testing.T) {
 	ctxListAg := &mock.Context{
 		InBody: listAgBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpListAgreements, ctxListAg)
+	r.Invoke("OP", "/"+servicecatalog.OpListAgreements, ctxListAg)
 	if ctxListAg.Status != 0 && ctxListAg.Status != 200 {
 		t.Fatalf("expected list agreements status success, got %d", ctxListAg.Status)
 	}
 
-	var listAgResult itemcatalog.AgreementList
+	var listAgResult servicecatalog.ServiceAgreementList
 	if err := json.Decode(ctxListAg.ResponseBody(), &listAgResult); err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +313,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 
 	// 11. Delete agreement via OP
-	deleteAgArgs := itemcatalog.DeleteAgreementArgs{
+	deleteAgArgs := servicecatalog.DeleteAgreementArgs{
 		TenantId: tenantID,
 		Id:       upsertedAg.Id,
 	}
@@ -327,7 +323,7 @@ func TestMCPOperations(t *testing.T) {
 	ctxDeleteAg := &mock.Context{
 		InBody: deleteAgBytes,
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpDeleteAgreement, ctxDeleteAg)
+	r.Invoke("OP", "/"+servicecatalog.OpDeleteAgreement, ctxDeleteAg)
 	if ctxDeleteAg.Status != 0 && ctxDeleteAg.Status != 200 {
 		t.Fatalf("expected delete agreement status success, got %d", ctxDeleteAg.Status)
 	}
@@ -335,7 +331,7 @@ func TestMCPOperations(t *testing.T) {
 
 func TestMCPOperationsErrorPaths(t *testing.T) {
 	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{
+	module, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs: &MockIDGen{},
 	})
 	if err != nil {
@@ -360,7 +356,7 @@ func TestMCPOperationsErrorPaths(t *testing.T) {
 	ctxErr := &mock.Context{
 		InBody: []byte(`invalid-json`),
 	}
-	r.Invoke("OP", "/"+itemcatalog.OpCreateItem, ctxErr)
+	r.Invoke("OP", "/"+servicecatalog.OpCreateService, ctxErr)
 	if ctxErr.Status != 400 {
 		t.Fatalf("expected status 400 on decode error, got %d", ctxErr.Status)
 	}

@@ -1,7 +1,8 @@
-# item-catalog
+# service-catalog
 <img src="docs/img/badges.svg">
 
-Unified catalog of services and products. Designed for the Velty ecosystem.
+Catalog of the **services** a business provides and the **specialties** that classify them. Designed for the Velty
+ecosystem. Products and supplies are other modules (`pharmacy_manager`, `supply_manager`).
 
 ## Quick Start
 
@@ -9,32 +10,31 @@ Unified catalog of services and products. Designed for the Velty ecosystem.
 import (
 	"webtyp.com/orm"
 	"webtyp.com/storage/mem"
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 )
 
 // In a real application, inject the database connection chosen by the composer app
 db := orm.New(mem.New())
 idGenerator := &MyIDGenerator{} // implements model.IDGenerator
 
-module, _ := itemcatalog.New(db, itemcatalog.Deps{
+module, _ := servicecatalog.New(db, servicecatalog.Deps{
 	IDs: idGenerator,
 })
 
 // Create specialty
-specialty, _ := module.UpsertSpecialty(itemcatalog.Specialty{
+specialty, _ := module.UpsertSpecialty(servicecatalog.Specialty{
 	TenantId: "my-tenant",
 	Prefix:   "md",
 	Slug:     "medicina-general",
 	Name:     "Medicina General",
 })
 
-// Use the module
-item, _ := module.CreateItem(itemcatalog.CatalogItem{
+// Create a service
+service, _ := module.CreateService(servicecatalog.Service{
 	TenantId:    "my-tenant",
 	SpecialtyId: specialty.Id,
 	Sku:         "md0001",
-	Name:        "Initial Product",
-	Type:        itemcatalog.ItemTypeProduct,
+	Name:        "General consultation",
 	Price:       100,
 	Currency:    "USD",
 	IsActive:    true,
@@ -48,14 +48,14 @@ item, _ := module.CreateItem(itemcatalog.CatalogItem{
 | `get_specialty` | Get specialty by ID |
 | `upsert_specialty` | Create or update specialty |
 | `delete_specialty` | Delete specialty |
-| `list_catalog_items` | List items for a tenant |
-| `get_catalog_item` | Get item by ID |
-| `find_item_by_sku` | Find item by SKU |
-| `create_catalog_item` | Create new item |
-| `update_catalog_item` | Update existing item |
-| `upsert_catalog_item` | Create or update item |
-| `deactivate_catalog_item` | Soft-delete item |
-| `delete_catalog_item` | Hard-delete item |
+| `list_services` | List services for a tenant |
+| `get_service` | Get service by ID |
+| `find_service_by_sku` | Find service by SKU |
+| `create_service` | Create new service |
+| `update_service` | Update existing service |
+| `upsert_service` | Create or update service |
+| `deactivate_service` | Soft-delete service |
+| `delete_service` | Hard-delete service |
 | `list_agreements` | List billing agreements |
 | `upsert_agreement` | Create or update agreement |
 | `delete_agreement` | Delete agreement |
@@ -69,7 +69,7 @@ item, _ := module.CreateItem(itemcatalog.CatalogItem{
 This module carries its own UI component (`ui/`), seed data (`seed/`), and runnable in-browser demo (`web/`).
 
 - **`ui/`**: Exports `ID` (`catalog_item`), `Label` (`Catálogo`), and `Browser(caller, ids, tenantID)`. The specialty is a form field loaded with `SetOptions`; no picker beside the title.
-- **`seed/`**: Exports `seed.Load(module, tenantID)`, populating 3 canonical specialties and 1 service item in each.
+- **`seed/`**: Exports `seed.Load(module, tenantID)`, populating 3 canonical specialties and 1 service in each.
 - **`web/`**: Runnable WASM demo. Run `webtyp` at the repository root to open the demo — in-browser, in-memory, no login.
 
 ## Key Files

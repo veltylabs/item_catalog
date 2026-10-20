@@ -1,7 +1,7 @@
 package ui
 
 import (
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/dom"
 	"webtyp.com/fmt"
 	"webtyp.com/layout/crudview"
@@ -12,18 +12,17 @@ import (
 
 // errListSpecialties is logged when the specialty options cannot be loaded:
 // the form then has an empty select, never a silent one.
-const errListSpecialties = "item_catalog: could not load specialties for the item form:"
+const errListSpecialties = "service_catalog: could not load specialties for the service form:"
 
 // Browser construye la vista de este módulo para el registro en modules/browser.go.
 func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (platformd.UIModule, error) {
-	itemsView, err := crudview.New(crudview.Config{
-		ParentID:  ID + ".items",
-		Presenter: itemcatalog.NewView(caller),
+	servicesView, err := crudview.New(crudview.Config{
+		ParentID:  ID + ".services",
+		Presenter: servicecatalog.NewView(caller),
 		IDs:       ids,
 		NewRecord: func() model.Model {
-			return &itemcatalog.CatalogItem{
+			return &servicecatalog.Service{
 				TenantId: tenantID,
-				Type:     itemcatalog.ItemTypeService,
 				Currency: "CLP",
 				Price:    0,
 				IsActive: true,
@@ -36,10 +35,10 @@ func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (plat
 
 	specialtiesView, err := crudview.New(crudview.Config{
 		ParentID:  ID + ".specialties",
-		Presenter: itemcatalog.NewSpecialtyView(caller),
+		Presenter: servicecatalog.NewSpecialtyView(caller),
 		IDs:       ids,
 		NewRecord: func() model.Model {
-			return &itemcatalog.Specialty{
+			return &servicecatalog.Specialty{
 				IsPublished: true,
 			}
 		},
@@ -47,11 +46,16 @@ func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (plat
 	if err != nil {
 		return nil, err
 	}
-	servicesMod := platformd.NewUIModule(ID+".items", "Servicios", IconServices, itemsView)
+	servicesMod := platformd.NewUIModule(ID+".services", "Servicios", IconServices, servicesView)
 	specialtiesMod := platformd.NewUIModule(ID+".specialties", "Especialidades", IconSpecialties, specialtiesView)
 
-	out := &itemcatalog.SpecialtyList{}
-	caller.Call(itemcatalog.ModelName+"."+itemcatalog.OpListSpecialties, nil, out, func(err error) {
+	servicesView.SetOptions("tax_treatment",
+		fmt.KeyValue{Key: servicecatalog.TaxTaxed, Value: "Taxed"},
+		fmt.KeyValue{Key: servicecatalog.TaxExempt, Value: "Exempt"},
+	)
+
+	out := &servicecatalog.SpecialtyList{}
+	caller.Call(servicecatalog.ModelName+"."+servicecatalog.OpListSpecialties, nil, out, func(err error) {
 		if err != nil {
 			dom.Log(errListSpecialties, err)
 			return
@@ -60,7 +64,7 @@ func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (plat
 		for _, s := range *out {
 			opts = append(opts, fmt.KeyValue{Key: s.Id, Value: s.Name})
 		}
-		itemsView.SetOptions("specialty_id", opts...)
+		servicesView.SetOptions("specialty_id", opts...)
 	})
 
 	return platformd.NewGroupUIModule(ID, Label, IconCatalog, []platformd.UIModule{

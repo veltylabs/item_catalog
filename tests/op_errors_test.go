@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/json"
 	"webtyp.com/model"
 	"webtyp.com/orm"
@@ -16,7 +16,7 @@ import (
 // silent 400).
 func opRouter(t *testing.T) *mock.Router {
 	t.Helper()
-	module, err := itemcatalog.New(orm.New(mem.New()), itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(orm.New(mem.New()), servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,54 +54,53 @@ func TestOpErrors_SayWhy(t *testing.T) {
 	r := opRouter(t)
 
 	t.Run("decode failure", func(t *testing.T) {
-		wantRefused(t, invoke(r, itemcatalog.OpUpsertSpecialty, []byte("{not json")), 400, "")
+		wantRefused(t, invoke(r, servicecatalog.OpUpsertSpecialty, []byte("{not json")), 400, "")
 	})
 	t.Run("empty records", func(t *testing.T) {
-		ctx := invoke(r, itemcatalog.OpUpsertSpecialty, encode(t, &itemcatalog.UpsertSpecialtyArgs{}))
-		wantRefused(t, ctx, 400, itemcatalog.ErrNoRecords.Error())
+		ctx := invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, &servicecatalog.UpsertSpecialtyArgs{}))
+		wantRefused(t, ctx, 400, servicecatalog.ErrNoRecords.Error())
 	})
 	t.Run("empty ids", func(t *testing.T) {
-		ctx := invoke(r, itemcatalog.OpDeleteItem, encode(t, &itemcatalog.DeleteItemsArgs{}))
-		wantRefused(t, ctx, 400, itemcatalog.ErrNoIds.Error())
+		ctx := invoke(r, servicecatalog.OpDeleteService, encode(t, &servicecatalog.DeleteServicesArgs{}))
+		wantRefused(t, ctx, 400, servicecatalog.ErrNoIds.Error())
 	})
 	t.Run("validation", func(t *testing.T) {
-		args := &itemcatalog.UpsertSpecialtyArgs{Records: []itemcatalog.Specialty{{TenantId: "t1"}}}
-		wantRefused(t, invoke(r, itemcatalog.OpUpsertSpecialty, encode(t, args)), 400, "")
+		args := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1"}}}
+		wantRefused(t, invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, args)), 400, "")
 	})
 	t.Run("duplicate prefix", func(t *testing.T) {
-		first := &itemcatalog.UpsertSpecialtyArgs{Records: []itemcatalog.Specialty{{TenantId: "t1", Prefix: "md", Slug: "medicina", Name: "Medicina"}}}
-		if ctx := invoke(r, itemcatalog.OpUpsertSpecialty, encode(t, first)); ctx.Status != 0 && ctx.Status != 200 {
+		first := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1", Prefix: "md", Slug: "medicina", Name: "Medicina"}}}
+		if ctx := invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, first)); ctx.Status != 0 && ctx.Status != 200 {
 			t.Fatalf("first specialty: %d %s", ctx.Status, ctx.ResponseBody())
 		}
-		again := &itemcatalog.UpsertSpecialtyArgs{Records: []itemcatalog.Specialty{{TenantId: "t1", Prefix: "md", Slug: "otra", Name: "Otra"}}}
-		wantRefused(t, invoke(r, itemcatalog.OpUpsertSpecialty, encode(t, again)), 409, itemcatalog.ErrSpecialtyPrefixExists.Error())
+		again := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1", Prefix: "md", Slug: "otra", Name: "Otra"}}}
+		wantRefused(t, invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, again)), 409, servicecatalog.ErrSpecialtyPrefixExists.Error())
 	})
 	t.Run("not found", func(t *testing.T) {
-		ctx := invoke(r, itemcatalog.OpGetSpecialty, encode(t, &itemcatalog.GetSpecialtyArgs{TenantId: "t1", Id: "nope"}))
-		wantRefused(t, ctx, 404, itemcatalog.ErrSpecialtyNotFound.Error())
+		ctx := invoke(r, servicecatalog.OpGetSpecialty, encode(t, &servicecatalog.GetSpecialtyArgs{TenantId: "t1", Id: "nope"}))
+		wantRefused(t, ctx, 404, servicecatalog.ErrSpecialtyNotFound.Error())
 	})
 }
 
 func TestItemCatalog_SaveWithoutSpecialtyIsRejected(t *testing.T) {
-	module, err := itemcatalog.New(orm.New(mem.New()), itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(orm.New(mem.New()), servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = module.CreateItem(itemcatalog.CatalogItem{
+	_, err = module.CreateService(servicecatalog.Service{
 		TenantId: "t1",
 		Sku:      "SKU-99",
 		Name:     "Service X",
-		Type:     "S",
 		Price:    100,
 		Currency: "CLP",
 		IsActive: true,
 	})
 	if err == nil {
-		t.Fatal("expected CreateItem to fail when no specialty is provided")
+		t.Fatal("expected CreateService to fail when no specialty is provided")
 	}
 
-	list, err := module.ListItems("t1", itemcatalog.ItemFilter{})
+	list, err := module.ListServices("t1", servicecatalog.ServiceFilter{})
 	if err != nil {
 		t.Fatal(err)
 	}
