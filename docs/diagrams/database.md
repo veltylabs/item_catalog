@@ -2,7 +2,7 @@
 
 ```mermaid
 erDiagram
-    catalog_item {
+    service {
         string id PK
         string tenant_id
         string sku
@@ -15,10 +15,10 @@ erDiagram
         int updated_at
     }
 
-    catalog_agreement {
+    service_agreement {
         string id PK
         string tenant_id
-        string catalog_item_id FK
+        string service_id FK
         string insurer
         string code
         float price
@@ -26,5 +26,5 @@ erDiagram
         int updated_at
     }
 
-    catalog_item ||--o{ catalog_agreement : "has multiple"
+    service ||--o{ service_agreement : "has multiple"
 ```

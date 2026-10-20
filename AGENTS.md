@@ -29,7 +29,7 @@ exception in one module's copy.
 
 Master plan (cross-repo status, whitelist rationale, dispatch order):
 [`app-releases/docs/REUSABLE_MODULES_MASTER_PLAN.md`](https://github.com/webtyp/app/blob/main/docs/REUSABLE_MODULES_MASTER_PLAN.md).
-Reference implementation (the pattern every module replicates): `github.com/veltylabs/item_catalog`.
+Reference implementation (the pattern every module replicates): `github.com/veltylabs/service_catalog`.
 
 ## Mission of a `veltylabs/modules/*` repo
 
@@ -145,7 +145,7 @@ reflection-free and TinyGo-sized. A module targets `wasm`/TinyGo first, so it fo
 
   func Migrate(conn ddl.Execer, ddlCompiler ddl.Compiler) error {
       d := ddl.New(conn, ddlCompiler)
-      if err := d.CreateTable(&thismodule.CatalogItem{}); err != nil {
+      if err := d.CreateTable(&thismodule.Service{}); err != nil {
           return err
       }
       return nil
@@ -177,7 +177,7 @@ The whitelist and blacklist above apply to the **root domain package**. Three su
 - `seed/` (package `seed`, no build tag) holds demo data: `Load(...) (Data, error)`, which writes through the module's own methods so every row is validated, and returns the rows it created so downstream demos can reference them.
 - `web/` (package `main`, `web/client.go` tagged `wasm`) is the runnable demo and may additionally import the concrete `webtyp.com/storage/mem`, `webtyp.com/router/loopback`, `webtyp.com/events/mock`, `webtyp.com/unixid` and `webtyp.com/auth/trusted_ip` (for `ValidateRUT`).
 
-**Dependencies between modules form a DAG.** The root domain package still imports no sibling module. `ui/`, `seed/` and `web/` may import the domain, `ui/` and `seed/` packages of **upstream** modules only. Current graph: `device_manager`, `item_catalog`, `patient_directory`, `business_calendar`, `payment_manager` (leaves) ← `staff_manager` ← `appointment_booking` ← `clinical_encounter` (`appointment_booking` also depends on `item_catalog`, `patient_directory`, `business_calendar`, `payment_manager`; `clinical_encounter` also on `patient_directory` and `staff_manager`). A screen that mixes modules lives in the most-downstream module it touches.
+**Dependencies between modules form a DAG.** The root domain package still imports no sibling module. `ui/`, `seed/` and `web/` may import the domain, `ui/` and `seed/` packages of **upstream** modules only. Current graph: `device_manager`, `service_catalog`, `patient_directory`, `business_calendar`, `payment_manager` (leaves) ← `staff_manager` ← `appointment_booking` ← `clinical_encounter` (`appointment_booking` also depends on `service_catalog`, `patient_directory`, `business_calendar`, `payment_manager`; `clinical_encounter` also on `patient_directory` and `staff_manager`). A screen that mixes modules lives in the most-downstream module it touches.
 
 ## Testing
 
@@ -215,12 +215,12 @@ never runs `codejob` or `gopush` itself — dispatch and close are the human's c
 
 ## Domain-specific notes (edit per module — nothing above this line)
 
-`item_catalog` is the **reference implementation** every other module replicates — if you're looking
+`service_catalog` is the **reference implementation** every other module replicates — if you're looking
 for "what does a compliant module actually look like," read this repo's `.go` files, not just the
 docs. Two things specific to this module:
 
-- Two entities, one parent-child relation: `CatalogItem` (service or product) and `Agreement`
-  (insurer billing agreement, child of a `CatalogItem` by soft reference `catalog_item_id`). Both are
+- Two entities, one parent-child relation: `Service` (service or product) and `Agreement`
+  (insurer billing agreement, child of a `Service` by soft reference `catalog_item_id`). Both are
   tenant-scoped.
 - `ServiceExists(tenantId, serviceId string) (bool, error)` exists solely to satisfy
   `appointment_booking`'s `CatalogReader` port — it is the one method here written for a consumer

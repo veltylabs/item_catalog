@@ -1,4 +1,4 @@
-package itemcatalog
+package servicecatalog
 
 import (
 	"webtyp.com/model"
@@ -9,10 +9,10 @@ import (
 const titleCatalog = "Catálogo"
 const titleSpecialties = "Especialidades"
 
-// Item projects a CatalogItem as a view.Item — the ONLY view-specific code this record
+// Item projects a Service as a view.Item — the ONLY view-specific code this record
 // carries (view.Itemizer). The Presenter's internal index (built from this on Reload)
 // replaces the old manual byID/WithFill lookup.
-func (m *CatalogItem) Item() view.Item {
+func (m *Service) Item() view.Item {
 	return view.Item{ID: m.Id, Label: m.Name, Description: m.Sku}
 }
 
@@ -26,9 +26,9 @@ func (s *Specialty) Item() view.Item {
 // the app decides which renderer draws it.
 func NewView(caller router.Caller) view.Presenter {
 	b := view.NewCallerLister(caller,
-		view.Ops{Module: ModelName, List: OpListItems, Save: OpUpsertItem, Update: OpUpdateItem, Delete: OpDeleteItem},
-		func() model.ModelSlice { return &CatalogItemList{} })
-	return view.New(b, &CatalogItem{}, view.WithTitle(titleCatalog))
+		view.Ops{Module: ModelName, List: OpListServices, Save: OpUpsertService, Update: OpUpdateService, Delete: OpDeleteService},
+		func() model.ModelSlice { return &ServiceList{} })
+	return view.New(b, &Service{}, view.WithTitle(titleCatalog))
 }
 
 // NewSpecialtyView builds the specialty Presenter.

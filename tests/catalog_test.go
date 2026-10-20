@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/model"
 	"webtyp.com/orm"
 	"webtyp.com/router/mock"
@@ -14,7 +14,7 @@ func TestCatalog(t *testing.T) {
 	db := orm.New(mem.New())
 
 	pub := &MockPublisher{}
-	module, err := itemcatalog.New(db, itemcatalog.Deps{
+	module, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs:       &MockIDGen{},
 		Publisher: pub,
 	})
@@ -25,7 +25,7 @@ func TestCatalog(t *testing.T) {
 	tenantID := "tenant-1"
 
 	// Create specialty first
-	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantID,
 		Prefix:   "md",
 		Slug:     "medicina-general",
@@ -36,12 +36,11 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test CreateItem
-	item := itemcatalog.CatalogItem{
+	item := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: spec.Id,
 		Sku:         "md1234",
 		Name:        "Test Service",
-		Type:        itemcatalog.ItemTypeService,
 		Price:       10.5,
 		Currency:    "USD",
 		IsActive:    true,
@@ -96,7 +95,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test ListItems
-	items, err := module.ListItems(tenantID, itemcatalog.ItemFilter{})
+	items, err := module.ListItems(tenantID, servicecatalog.ServiceFilter{})
 	if err != nil {
 		t.Errorf("failed to list items: %v", err)
 	}
@@ -105,7 +104,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Create second specialty and item to test filter isolation between two real specialties
-	spec2, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec2, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantID,
 		Prefix:   "of",
 		Slug:     "oftalmologia",
@@ -115,12 +114,11 @@ func TestCatalog(t *testing.T) {
 		t.Fatalf("failed to create second specialty: %v", err)
 	}
 
-	item2 := itemcatalog.CatalogItem{
+	item2 := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: spec2.Id,
 		Sku:         "of1234",
 		Name:        "Ophthalmology Exam",
-		Type:        itemcatalog.ItemTypeService,
 		Price:       20.0,
 		Currency:    "USD",
 		IsActive:    true,
@@ -131,9 +129,8 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test ListItems with filter matching spec1
-	filteredItems, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
+	filteredItems, err := module.ListItems(tenantID, servicecatalog.ServiceFilter{
 		SpecialtyId: spec.Id,
-		Type:        itemcatalog.ItemTypeService,
 		ActiveOnly:  true,
 		Limit:       5,
 		Offset:      0,
@@ -146,7 +143,7 @@ func TestCatalog(t *testing.T) {
 	}
 
 	// Test ListItems with filter matching spec2
-	filteredItems2, err := module.ListItems(tenantID, itemcatalog.ItemFilter{
+	filteredItems2, err := module.ListItems(tenantID, servicecatalog.ServiceFilter{
 		SpecialtyId: spec2.Id,
 	})
 	if err != nil {
@@ -166,7 +163,7 @@ func TestCatalog(t *testing.T) {
 
 	// Test DeleteSpecialty while in use -> should fail with ErrSpecialtyInUse
 	err = module.DeleteSpecialty(tenantID, spec.Id)
-	if err == nil || err.Error() != itemcatalog.ErrSpecialtyInUse.Error() {
+	if err == nil || err.Error() != servicecatalog.ErrSpecialtyInUse.Error() {
 		t.Errorf("expected ErrSpecialtyInUse, got %v", err)
 	}
 
@@ -205,7 +202,7 @@ func TestCatalog(t *testing.T) {
 
 func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +211,7 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 	tenant2 := "tenant-2"
 
 	// 1. Create specialty in tenant 1
-	spec1, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec1, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant1,
 		Prefix:   "of",
 		Slug:     "oftalmologia",
@@ -230,29 +227,29 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 	}
 
 	// 2. Duplicate prefix in tenant 1 -> rejected
-	_, err = module.UpsertSpecialty(itemcatalog.Specialty{
+	_, err = module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant1,
 		Prefix:   "of",
 		Slug:     "oftalmologia-2",
 		Name:     "Oftalmología Segunda",
 	})
-	if err == nil || err.Error() != itemcatalog.ErrSpecialtyPrefixExists.Error() {
+	if err == nil || err.Error() != servicecatalog.ErrSpecialtyPrefixExists.Error() {
 		t.Errorf("expected ErrSpecialtyPrefixExists, got %v", err)
 	}
 
 	// 3. Duplicate slug in tenant 1 -> rejected
-	_, err = module.UpsertSpecialty(itemcatalog.Specialty{
+	_, err = module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant1,
 		Prefix:   "ox",
 		Slug:     "oftalmologia",
 		Name:     "Oftalmología Segunda",
 	})
-	if err == nil || err.Error() != itemcatalog.ErrSpecialtySlugExists.Error() {
+	if err == nil || err.Error() != servicecatalog.ErrSpecialtySlugExists.Error() {
 		t.Errorf("expected ErrSpecialtySlugExists, got %v", err)
 	}
 
 	// 4. Same prefix in tenant 2 -> allowed
-	spec2, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec2, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant2,
 		Prefix:   "of",
 		Slug:     "oftalmologia",
@@ -268,7 +265,7 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 
 func TestMigration(t *testing.T) {
 	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,12 +273,11 @@ func TestMigration(t *testing.T) {
 	tenantID := "tenant-1"
 
 	// Create item with canonical prefix "mdcong" directly in DB (simulating legacy data before migration)
-	item1 := itemcatalog.CatalogItem{
+	item1 := servicecatalog.Service{
 		Id:       "unmigrated-1",
 		TenantId: tenantID,
 		Sku:      "mdcong",
 		Name:     "Congreso Medico",
-		Type:     itemcatalog.ItemTypeService,
 		Price:    100.0,
 		Currency: "USD",
 		IsActive: true,
@@ -291,12 +287,11 @@ func TestMigration(t *testing.T) {
 	}
 
 	// Create item with unknown prefix "zz1234" directly in DB
-	item2 := itemcatalog.CatalogItem{
+	item2 := servicecatalog.Service{
 		Id:       "unmigrated-2",
 		TenantId: tenantID,
 		Sku:      "zz1234",
 		Name:     "Unknown Item",
-		Type:     itemcatalog.ItemTypeService,
 		Price:    50.0,
 		Currency: "USD",
 		IsActive: true,
@@ -306,7 +301,7 @@ func TestMigration(t *testing.T) {
 	}
 
 	// Run migration
-	report, err := module.MigrateSpecialtiesAndItems(tenantID)
+	report, err := module.MigrateSpecialtiesAndServices(tenantID)
 	if err != nil {
 		t.Fatalf("migration failed: %v", err)
 	}
@@ -345,11 +340,11 @@ func TestMigration(t *testing.T) {
 	}
 }
 
-func TestAgreements(t *testing.T) {
+func TestServiceAgreements(t *testing.T) {
 	db := orm.New(mem.New())
 
 	pub := &MockPublisher{}
-	module, err := itemcatalog.New(db, itemcatalog.Deps{
+	module, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs:       &MockIDGen{},
 		Publisher: pub,
 	})
@@ -359,7 +354,7 @@ func TestAgreements(t *testing.T) {
 
 	tenantID := "tenant-1"
 
-	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantID,
 		Prefix:   "md",
 		Slug:     "medicina-general",
@@ -369,13 +364,12 @@ func TestAgreements(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create CatalogItem first so foreign key validation is satisfied
-	goodItem := itemcatalog.CatalogItem{
+	// Create Service first so foreign key validation is satisfied
+	goodItem := servicecatalog.Service{
 		TenantId:    tenantID,
 		SpecialtyId: spec.Id,
 		Sku:         "md-AG1",
-		Name:        "Agreement Service",
-		Type:        itemcatalog.ItemTypeService,
+		Name:        "ServiceAgreement Service",
 		Price:       100.0,
 		Currency:    "USD",
 		IsActive:    true,
@@ -389,17 +383,17 @@ func TestAgreements(t *testing.T) {
 	// Clear events before testing agreements
 	pub.Events = nil
 
-	// 1. Test UpsertAgreement - Create (Id == "")
-	ag := itemcatalog.Agreement{
-		TenantId:      tenantID,
-		CatalogItemId: itemID,
-		Insurer:       "FONASA",
-		Code:          "F-12345",
-		Price:         8500.0,
-		IsActive:      true,
+	// 1. Test UpsertServiceAgreement - Create (Id == "")
+	ag := servicecatalog.ServiceAgreement{
+		TenantId:  tenantID,
+		ServiceId: itemID,
+		Insurer:   "FONASA",
+		Code:      "F-12345",
+		Price:     8500.0,
+		IsActive:  true,
 	}
 
-	created, err := module.UpsertAgreement(ag)
+	created, err := module.UpsertServiceAgreement(ag)
 	if err != nil {
 		t.Fatalf("failed to create agreement: %v", err)
 	}
@@ -409,12 +403,12 @@ func TestAgreements(t *testing.T) {
 	if created.UpdatedAt == 0 {
 		t.Error("expected UpdatedAt to be set")
 	}
-	if len(pub.Events) != 1 || pub.Events[0].Topic != "catalog.agreement.created" {
-		t.Errorf("expected catalog.agreement.created event, got %v", pub.Events)
+	if len(pub.Events) != 1 || pub.Events[0].Topic != "catalog.service_agreement.created" {
+		t.Errorf("expected catalog.service_agreement.created event, got %v", pub.Events)
 	}
 
-	// 2. Test ListAgreements - Filter by Tenant and Item ID
-	list, err := module.ListAgreements(tenantID, itemID)
+	// 2. Test ListServiceAgreements - Filter by Tenant and Item ID
+	list, err := module.ListServiceAgreements(tenantID, itemID)
 	if err != nil {
 		t.Fatalf("failed to list agreements: %v", err)
 	}
@@ -426,7 +420,7 @@ func TestAgreements(t *testing.T) {
 	}
 
 	// Filter by non-existent item id
-	emptyList, err := module.ListAgreements(tenantID, "non-existent")
+	emptyList, err := module.ListServiceAgreements(tenantID, "non-existent")
 	if err != nil {
 		t.Fatalf("failed to list agreements: %v", err)
 	}
@@ -434,37 +428,37 @@ func TestAgreements(t *testing.T) {
 		t.Errorf("expected 0 agreements, got %d", len(emptyList))
 	}
 
-	// 3. Test UpsertAgreement - Update (Id != "")
+	// 3. Test UpsertServiceAgreement - Update (Id != "")
 	created.Price = 9000.0
-	updated, err := module.UpsertAgreement(created)
+	updated, err := module.UpsertServiceAgreement(created)
 	if err != nil {
 		t.Fatalf("failed to update agreement: %v", err)
 	}
 	if updated.Price != 9000.0 {
 		t.Errorf("expected updated price to be 9000.0, got %f", updated.Price)
 	}
-	if len(pub.Events) != 2 || pub.Events[1].Topic != "catalog.agreement.updated" {
-		t.Errorf("expected catalog.agreement.updated event, got %v", pub.Events)
+	if len(pub.Events) != 2 || pub.Events[1].Topic != "catalog.service_agreement.updated" {
+		t.Errorf("expected catalog.service_agreement.updated event, got %v", pub.Events)
 	}
 
-	// 4. Test DeleteAgreement
-	err = module.DeleteAgreement(tenantID, updated.Id)
+	// 4. Test DeleteServiceAgreement
+	err = module.DeleteServiceAgreement(tenantID, updated.Id)
 	if err != nil {
 		t.Fatalf("failed to delete agreement: %v", err)
 	}
-	listAfterDelete, _ := module.ListAgreements(tenantID, itemID)
+	listAfterDelete, _ := module.ListServiceAgreements(tenantID, itemID)
 	if len(listAfterDelete) != 0 {
 		t.Errorf("expected 0 agreements after deletion, got %d", len(listAfterDelete))
 	}
-	if len(pub.Events) != 3 || pub.Events[2].Topic != "catalog.agreement.deleted" {
-		t.Errorf("expected catalog.agreement.deleted event, got %v", pub.Events)
+	if len(pub.Events) != 3 || pub.Events[2].Topic != "catalog.service_agreement.deleted" {
+		t.Errorf("expected catalog.service_agreement.deleted event, got %v", pub.Events)
 	}
 }
 
 func TestModule_MountOperationsAndView(t *testing.T) {
 	db := orm.New(mem.New())
 	pub := &MockPublisher{}
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}, Publisher: pub})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}, Publisher: pub})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,25 +469,71 @@ func TestModule_MountOperationsAndView(t *testing.T) {
 	infos := r.Routes()
 	var found bool
 	for _, i := range infos {
-		if i.Path == itemcatalog.OpUpsertItem || i.Path == "/"+itemcatalog.OpUpsertItem {
+		if i.Path == servicecatalog.OpUpsertService || i.Path == "/"+servicecatalog.OpUpsertService {
 			found = true
-			if i.Resource != "catalog_item" || i.Action != (model.Create|model.Update) {
-				t.Errorf("RBAC mismatch for %s: %+v", itemcatalog.OpUpsertItem, i)
+			if i.Resource != "service" || i.Action != (model.Create|model.Update) {
+				t.Errorf("RBAC mismatch for %s: %+v", servicecatalog.OpUpsertService, i)
 			}
 		}
 	}
 	if !found {
-		t.Fatalf("MountOperations did not register %s", itemcatalog.OpUpsertItem)
+		t.Fatalf("MountOperations did not register %s", servicecatalog.OpUpsertService)
 	}
 
 	caller := &mock.Caller{}
-	pres := itemcatalog.NewView(caller)
+	pres := servicecatalog.NewView(caller)
 	if pres.Title() == "" {
 		t.Error("expected a non-empty view title")
 	}
 
-	specPres := itemcatalog.NewSpecialtyView(caller)
+	specPres := servicecatalog.NewSpecialtyView(caller)
 	if specPres.Title() == "" {
 		t.Error("expected a non-empty specialty view title")
+	}
+}
+
+func TestTaxTreatmentValidation(t *testing.T) {
+	db := orm.New(mem.New())
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
+		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Unknown tax treatment should fail
+	badService := servicecatalog.Service{
+		TenantId:     "t1",
+		SpecialtyId:  spec.Id,
+		Sku:          "sku-1",
+		Name:         "S1",
+		Price:        100,
+		Currency:     "USD",
+		IsActive:     true,
+		TaxTreatment: "UNKNOWN",
+	}
+	err = badService.Validate(model.ActionCreate)
+	if err == nil {
+		t.Error("expected error for unknown tax treatment")
+	}
+
+	// Valid tax treatments should succeed
+	s2 := servicecatalog.Service{
+		TenantId:     "t1",
+		SpecialtyId:  spec.Id,
+		Sku:          "sku-2",
+		Name:         "S2",
+		Price:        100,
+		Currency:     "USD",
+		IsActive:     true,
+		TaxTreatment: servicecatalog.TaxTaxed,
+	}
+	if _, err := module.CreateItem(s2); err != nil {
+		t.Errorf("expected success for TAXED, got %v", err)
 	}
 }

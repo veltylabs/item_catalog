@@ -1,27 +1,27 @@
 package seed
 
 import (
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/fmt"
 )
 
 const currencyCLP = "CLP"
 
 type Data struct {
-	Specialties []itemcatalog.Specialty
-	Items       []itemcatalog.CatalogItem
+	Specialties []servicecatalog.Specialty
+	Items       []servicecatalog.Service
 }
 
 // Load creates three canonical specialties and one service in each.
-func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
+func Load(m *servicecatalog.Module, tenantID string) (Data, error) {
 	data := Data{}
 
 	targetSlugs := []string{"medicina-general", "traumatologia", "ecografia"}
 
 	for i, slug := range targetSlugs {
-		var cs itemcatalog.CanonicalSpecialty
+		var cs servicecatalog.CanonicalSpecialty
 		found := false
-		for _, canonical := range itemcatalog.CanonicalSpecialties {
+		for _, canonical := range servicecatalog.CanonicalSpecialties {
 			if canonical.Slug == slug {
 				cs = canonical
 				found = true
@@ -32,7 +32,7 @@ func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
 			return data, fmt.Err("seed: canonical specialty not found", slug)
 		}
 
-		spec, err := m.UpsertSpecialty(itemcatalog.Specialty{
+		spec, err := m.UpsertSpecialty(servicecatalog.Specialty{
 			TenantId:    tenantID,
 			Prefix:      cs.Prefix,
 			Slug:        cs.Slug,
@@ -73,12 +73,11 @@ func Load(m *itemcatalog.Module, tenantID string) (Data, error) {
 			return data, fmt.Err("seed: specialty id not found", specDef.slug)
 		}
 
-		createdItem, err := m.CreateItem(itemcatalog.CatalogItem{
+		createdItem, err := m.CreateItem(servicecatalog.Service{
 			TenantId:    tenantID,
 			SpecialtyId: specID,
 			Sku:         specDef.sku,
 			Name:        specDef.name,
-			Type:        itemcatalog.ItemTypeService,
 			Price:       specDef.price,
 			Currency:    currencyCLP,
 			IsActive:    true,

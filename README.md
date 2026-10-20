@@ -1,4 +1,4 @@
-# item-catalog
+# service-catalog
 <img src="docs/img/badges.svg">
 
 Unified catalog of services and products. Designed for the Velty ecosystem.
@@ -9,7 +9,7 @@ Unified catalog of services and products. Designed for the Velty ecosystem.
 import (
 	"webtyp.com/orm"
 	"webtyp.com/storage/mem"
-	itemcatalog "github.com/veltylabs/item_catalog"
+	itemcatalog "github.com/veltylabs/service_catalog"
 )
 
 // In a real application, inject the database connection chosen by the composer app

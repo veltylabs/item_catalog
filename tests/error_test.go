@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 )
 
 func TestSentinelErrorTexts(t *testing.T) {
@@ -11,12 +11,12 @@ func TestSentinelErrorTexts(t *testing.T) {
 		err  error
 		text string
 	}{
-		{itemcatalog.ErrNotFound, "item not found"},
-		{itemcatalog.ErrAlreadyExists, "item already exists"},
-		{itemcatalog.ErrSpecialtyNotFound, "specialty not found"},
-		{itemcatalog.ErrSpecialtyInUse, "specialty in use"},
-		{itemcatalog.ErrSpecialtyPrefixExists, "specialty prefix already exists"},
-		{itemcatalog.ErrSpecialtySlugExists, "specialty slug already exists"},
+		{servicecatalog.ErrNotFound, "service not found"},
+		{servicecatalog.ErrAlreadyExists, "service already exists"},
+		{servicecatalog.ErrSpecialtyNotFound, "specialty not found"},
+		{servicecatalog.ErrSpecialtyInUse, "specialty in use"},
+		{servicecatalog.ErrSpecialtyPrefixExists, "specialty prefix already exists"},
+		{servicecatalog.ErrSpecialtySlugExists, "specialty slug already exists"},
 	}
 
 	for _, c := range cases {

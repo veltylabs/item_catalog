@@ -3,9 +3,9 @@
 package main
 
 import (
-	itemcatalog "github.com/veltylabs/item_catalog"
-	"github.com/veltylabs/item_catalog/seed"
-	"github.com/veltylabs/item_catalog/ui"
+	servicecatalog "github.com/veltylabs/service_catalog"
+	"github.com/veltylabs/service_catalog/seed"
+	"github.com/veltylabs/service_catalog/ui"
 
 	. "webtyp.com/dom"
 	"webtyp.com/events/mock"
@@ -36,7 +36,7 @@ func main() {
 	db := orm.New(mem.New())
 	broker := &mock.Broker{}
 
-	ic, err := itemcatalog.New(db, itemcatalog.Deps{
+	ic, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs:       ids,
 		Publisher: broker,
 	})

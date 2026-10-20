@@ -1,4 +1,4 @@
-package itemcatalog
+package servicecatalog
 
 import (
 	"webtyp.com/fmt"
@@ -33,10 +33,10 @@ type MigrationReport struct {
 	UnmatchedSKUs []string
 }
 
-// MigrateSpecialtiesAndItems seeds canonical specialties for the tenant if missing,
-// and maps existing CatalogItems to the corresponding specialty_id based on SKU prefix (sku[:2]).
+// MigrateSpecialtiesAndServices seeds canonical specialties for the tenant if missing,
+// and maps existing Services to the corresponding specialty_id based on SKU prefix (sku[:2]).
 // Unmatched items are left unassigned and returned in MigrationReport.UnmatchedSKUs.
-func (m *Module) MigrateSpecialtiesAndItems(tenantId string) (MigrationReport, error) {
+func (m *Module) MigrateSpecialtiesAndServices(tenantId string) (MigrationReport, error) {
 	report := MigrationReport{}
 
 	prefixToID := make([]fmt.KeyValue, 0, len(CanonicalSpecialties))
@@ -72,7 +72,7 @@ func (m *Module) MigrateSpecialtiesAndItems(tenantId string) (MigrationReport, e
 		}
 	}
 
-	items, err := m.ListItems(tenantId, ItemFilter{})
+	items, err := m.ListItems(tenantId, ServiceFilter{})
 	if err != nil {
 		return report, err
 	}

@@ -1,4 +1,4 @@
-package itemcatalog
+package servicecatalog
 
 import (
 	"webtyp.com/events"
@@ -14,14 +14,14 @@ type domainError string
 func (e domainError) Error() string { return string(e) }
 
 const (
-	ErrNotFound              domainError = "item not found"
-	ErrAlreadyExists         domainError = "item already exists"
+	ErrNotFound              domainError = "service not found"
+	ErrAlreadyExists         domainError = "service already exists"
 	ErrSpecialtyNotFound     domainError = "specialty not found"
 	ErrSpecialtyInUse        domainError = "specialty in use"
 	ErrSpecialtyPrefixExists domainError = "specialty prefix already exists"
 	ErrSpecialtySlugExists   domainError = "specialty slug already exists"
-	ErrNoRecords             domainError = "item_catalog: no records to save"
-	ErrNoIds                 domainError = "item_catalog: no ids given"
+	ErrNoRecords             domainError = "service_catalog: no records to save"
+	ErrNoIds                 domainError = "service_catalog: no ids given"
 )
 
 // decodeError is a request body that could not be read: always 400.
@@ -29,7 +29,7 @@ type decodeError struct{ err error }
 
 func (d decodeError) Error() string { return msgDecode + d.err.Error() }
 
-const msgDecode = "item_catalog: cannot read the request: "
+const msgDecode = "service_catalog: cannot read the request: "
 
 // writeError answers err with its status and, always, its text — the only thing an HTTP caller
 // sees. 400 = unreadable or invalid input · 404 = not found · 409 = conflict · 500 = anything else.
@@ -64,14 +64,14 @@ const (
 	OpUpsertSpecialty = "upsert_specialty"
 	OpDeleteSpecialty = "delete_specialty"
 
-	OpListItems      = "list_catalog_items"
-	OpGetItem        = "get_catalog_item"
-	OpFindItemBySKU  = "find_item_by_sku"
-	OpCreateItem     = "create_catalog_item"
-	OpUpdateItem     = "update_catalog_item"
-	OpUpsertItem     = "upsert_catalog_item"
-	OpDeactivateItem = "deactivate_catalog_item"
-	OpDeleteItem     = "delete_catalog_item"
+	OpListServices      = "list_services"
+	OpGetService        = "get_service"
+	OpFindServiceBySKU  = "find_service_by_sku"
+	OpCreateService     = "create_service"
+	OpUpdateService     = "update_service"
+	OpUpsertService     = "upsert_service"
+	OpDeactivateService = "deactivate_service"
+	OpDeleteService     = "delete_service"
 
 	OpListAgreements  = "list_agreements"
 	OpUpsertAgreement = "upsert_agreement"
@@ -81,13 +81,13 @@ const (
 	TopicSpecialtyUpdated = "catalog.specialty.updated"
 	TopicSpecialtyDeleted = "catalog.specialty.deleted"
 
-	TopicItemCreated      = "catalog.item.created"
-	TopicItemUpdated      = "catalog.item.updated"
-	TopicItemDeactivated  = "catalog.item.deactivated"
-	TopicItemDeleted      = "catalog.item.deleted"
-	TopicAgreementCreated = "catalog.agreement.created"
-	TopicAgreementUpdated = "catalog.agreement.updated"
-	TopicAgreementDeleted = "catalog.agreement.deleted"
+	TopicItemCreated             = "catalog.service.created"
+	TopicItemUpdated             = "catalog.service.updated"
+	TopicItemDeactivated         = "catalog.service.deactivated"
+	TopicItemDeleted             = "catalog.service.deleted"
+	TopicServiceAgreementCreated = "catalog.service_agreement.created"
+	TopicServiceAgreementUpdated = "catalog.service_agreement.updated"
+	TopicServiceAgreementDeleted = "catalog.service_agreement.deleted"
 )
 
 type ValidationError struct {
@@ -111,7 +111,7 @@ type Module struct {
 
 func New(db *orm.DB, deps Deps) (*Module, error) {
 	if deps.IDs == nil {
-		return nil, fmt.Err("item_catalog: Deps.IDs is required")
+		return nil, fmt.Err("service_catalog: Deps.IDs is required")
 	}
 	return &Module{db: db, ids: deps.IDs, pub: deps.Publisher}, nil
 }
@@ -248,13 +248,13 @@ func (m *Module) DeleteSpecialty(tenantId, id string) error {
 		return err
 	}
 
-	// Check if any catalog item is using this specialty
-	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.SpecialtyId).Eq(id)
+	// Check if any catalog.service is using this specialty
+	var item Service
+	qb := m.db.Query(&item).Where(Service_.SpecialtyId).Eq(id)
 	if spec.TenantId != "" {
-		qb = qb.Where(CatalogItem_.TenantId).Eq(spec.TenantId)
+		qb = qb.Where(Service_.TenantId).Eq(spec.TenantId)
 	}
-	items, err := ReadAllCatalogItem(qb)
+	items, err := ReadAllService(qb)
 	if err != nil {
 		return err
 	}
@@ -279,46 +279,44 @@ func (m *Module) DeleteSpecialty(tenantId, id string) error {
 
 // Service methods
 
-func (m *Module) GetItem(tenantId, id string) (CatalogItem, error) {
-	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.Id).Eq(id)
+func (m *Module) GetItem(tenantId, id string) (Service, error) {
+	var item Service
+	qb := m.db.Query(&item).Where(Service_.Id).Eq(id)
 	if tenantId != "" {
-		qb = qb.Where(CatalogItem_.TenantId).Eq(tenantId)
+		qb = qb.Where(Service_.TenantId).Eq(tenantId)
 	}
-	_, err := ReadOneCatalogItem(qb, &item)
+	_, err := ReadOneService(qb, &item)
 	if err != nil {
 		if orm.IsNotFound(err) {
-			return CatalogItem{}, ErrNotFound
+			return Service{}, ErrNotFound
 		}
-		return CatalogItem{}, err
+		return Service{}, err
 	}
 	return item, nil
 }
 
-func (m *Module) FindBySKU(tenantId, sku string) (CatalogItem, error) {
-	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.Sku).Eq(sku).Where(CatalogItem_.TenantId).Eq(tenantId)
-	_, err := ReadOneCatalogItem(qb, &item)
+func (m *Module) FindBySKU(tenantId, sku string) (Service, error) {
+	var item Service
+	qb := m.db.Query(&item).Where(Service_.Sku).Eq(sku).Where(Service_.TenantId).Eq(tenantId)
+	_, err := ReadOneService(qb, &item)
 	if err != nil {
 		if orm.IsNotFound(err) {
-			return CatalogItem{}, ErrNotFound
+			return Service{}, ErrNotFound
 		}
-		return CatalogItem{}, err
+		return Service{}, err
 	}
 	return item, nil
 }
 
-func (m *Module) ListItems(tenantId string, filter ItemFilter) ([]CatalogItem, error) {
-	var item CatalogItem
-	qb := m.db.Query(&item).Where(CatalogItem_.TenantId).Eq(tenantId)
+func (m *Module) ListItems(tenantId string, filter ServiceFilter) ([]Service, error) {
+	var item Service
+	qb := m.db.Query(&item).Where(Service_.TenantId).Eq(tenantId)
 	if filter.SpecialtyId != "" {
-		qb = qb.Where(CatalogItem_.SpecialtyId).Eq(filter.SpecialtyId)
+		qb = qb.Where(Service_.SpecialtyId).Eq(filter.SpecialtyId)
 	}
-	if filter.Type != "" {
-		qb = qb.Where(CatalogItem_.Type).Eq(filter.Type)
-	}
+
 	if filter.ActiveOnly {
-		qb = qb.Where(CatalogItem_.IsActive).Eq(true)
+		qb = qb.Where(Service_.IsActive).Eq(true)
 	}
 	if filter.Limit > 0 {
 		qb = qb.Limit(int(filter.Limit))
@@ -326,42 +324,39 @@ func (m *Module) ListItems(tenantId string, filter ItemFilter) ([]CatalogItem, e
 	if filter.Offset > 0 {
 		qb = qb.Offset(int(filter.Offset))
 	}
-	results, err := ReadAllCatalogItem(qb)
+	results, err := ReadAllService(qb)
 	if err != nil {
 		return nil, err
 	}
-	items := make([]CatalogItem, len(results))
+	items := make([]Service, len(results))
 	for i, r := range results {
 		items[i] = *r
 	}
 	return items, nil
 }
 
-func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
+func (m *Module) CreateItem(item Service) (Service, error) {
 	if item.Id == "" {
 		item.Id = m.ids.NewID()
 	}
 	item.UpdatedAt = time.Now()
 
 	if err := item.Validate(model.ActionCreate); err != nil {
-		return CatalogItem{}, ValidationError{Err: err}
-	}
-	if item.Type != ItemTypeService && item.Type != ItemTypeProduct {
-		return CatalogItem{}, ValidationError{Err: fmt.Err("invalid item type: %s", item.Type)}
+		return Service{}, ValidationError{Err: err}
 	}
 
 	// Validate SKU uniqueness per tenant
 	existing, err := m.FindBySKU(item.TenantId, item.Sku)
 	if err == nil {
 		if existing.Id != "" {
-			return CatalogItem{}, ErrAlreadyExists
+			return Service{}, ErrAlreadyExists
 		}
 	} else if e, ok := err.(domainError); !ok || e != ErrNotFound {
-		return CatalogItem{}, err
+		return Service{}, err
 	}
 
 	if err := m.db.Create(&item); err != nil {
-		return CatalogItem{}, err
+		return Service{}, err
 	}
 	if m.pub != nil {
 		m.pub.Publish(events.Event{Topic: TopicItemCreated, Payload: &item})
@@ -369,26 +364,23 @@ func (m *Module) CreateItem(item CatalogItem) (CatalogItem, error) {
 	return item, nil
 }
 
-func (m *Module) UpdateItem(item CatalogItem) (CatalogItem, error) {
+func (m *Module) UpdateItem(item Service) (Service, error) {
 	if err := item.Validate(model.ActionUpdate); err != nil {
-		return CatalogItem{}, ValidationError{Err: err}
-	}
-	if item.Type != ItemTypeService && item.Type != ItemTypeProduct {
-		return CatalogItem{}, ValidationError{Err: fmt.Err("invalid item type: %s", item.Type)}
+		return Service{}, ValidationError{Err: err}
 	}
 
 	// Verify item exists and belongs to tenant
 	existing, err := m.GetItem(item.TenantId, item.Id)
 	if err != nil {
-		return CatalogItem{}, err
+		return Service{}, err
 	}
 	if item.TenantId == "" {
 		item.TenantId = existing.TenantId
 	}
 
 	item.UpdatedAt = time.Now()
-	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
-		return CatalogItem{}, err
+	if err := m.db.Update(&item, orm.Eq(Service_.Id, item.Id), orm.Eq(Service_.TenantId, item.TenantId)); err != nil {
+		return Service{}, err
 	}
 	if m.pub != nil {
 		m.pub.Publish(events.Event{Topic: TopicItemUpdated, Payload: &item})
@@ -403,7 +395,7 @@ func (m *Module) DeactivateItem(tenantId, id string) error {
 	}
 	item.IsActive = false
 	item.UpdatedAt = time.Now()
-	if err := m.db.Update(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
+	if err := m.db.Update(&item, orm.Eq(Service_.Id, item.Id), orm.Eq(Service_.TenantId, item.TenantId)); err != nil {
 		return err
 	}
 	if m.pub != nil {
@@ -418,11 +410,11 @@ func (m *Module) DeleteItem(tenantId, id string) error {
 		return err
 	}
 	if item.TenantId != "" {
-		if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id), orm.Eq(CatalogItem_.TenantId, item.TenantId)); err != nil {
+		if err := m.db.Delete(&item, orm.Eq(Service_.Id, item.Id), orm.Eq(Service_.TenantId, item.TenantId)); err != nil {
 			return err
 		}
 	} else {
-		if err := m.db.Delete(&item, orm.Eq(CatalogItem_.Id, item.Id)); err != nil {
+		if err := m.db.Delete(&item, orm.Eq(Service_.Id, item.Id)); err != nil {
 			return err
 		}
 	}
@@ -440,7 +432,7 @@ func (m *Module) ServiceExists(tenantId, serviceId string) (bool, error) {
 		}
 		return false, err
 	}
-	return item.Type == ItemTypeService && item.IsActive, nil
+	return item.IsActive, nil
 }
 
 // ServiceCard devuelve nombre, precio de lista, moneda y estado de un servicio
@@ -454,43 +446,41 @@ func (m *Module) ServiceCard(tenantId, serviceId string) (name string, price flo
 	if e != nil {
 		return "", 0, "", false, e
 	}
-	if item.Type != ItemTypeService {
-		return "", 0, "", false, ErrNotFound
-	}
+
 	return item.Name, item.Price, item.Currency, item.IsActive, nil
 }
 
-func (m *Module) ListAgreements(tenantId, catalogItemId string) ([]Agreement, error) {
-	var a Agreement
-	qb := m.db.Query(&a).Where(Agreement_.TenantId).Eq(tenantId)
+func (m *Module) ListServiceAgreements(tenantId, catalogItemId string) ([]ServiceAgreement, error) {
+	var a ServiceAgreement
+	qb := m.db.Query(&a).Where(ServiceAgreement_.TenantId).Eq(tenantId)
 	if catalogItemId != "" {
-		qb = qb.Where(Agreement_.CatalogItemId).Eq(catalogItemId)
+		qb = qb.Where(ServiceAgreement_.ServiceId).Eq(catalogItemId)
 	}
-	results, err := ReadAllAgreement(qb)
+	results, err := ReadAllServiceAgreement(qb)
 	if err != nil {
 		return nil, err
 	}
-	items := make([]Agreement, len(results))
+	items := make([]ServiceAgreement, len(results))
 	for i, r := range results {
 		items[i] = *r
 	}
 	return items, nil
 }
 
-func (m *Module) GetAgreement(tenantId, id string) (Agreement, error) {
-	var a Agreement
-	qb := m.db.Query(&a).Where(Agreement_.Id).Eq(id).Where(Agreement_.TenantId).Eq(tenantId)
-	_, err := ReadOneAgreement(qb, &a)
+func (m *Module) GetServiceAgreement(tenantId, id string) (ServiceAgreement, error) {
+	var a ServiceAgreement
+	qb := m.db.Query(&a).Where(ServiceAgreement_.Id).Eq(id).Where(ServiceAgreement_.TenantId).Eq(tenantId)
+	_, err := ReadOneServiceAgreement(qb, &a)
 	if err != nil {
 		if orm.IsNotFound(err) {
-			return Agreement{}, ErrNotFound
+			return ServiceAgreement{}, ErrNotFound
 		}
-		return Agreement{}, err
+		return ServiceAgreement{}, err
 	}
 	return a, nil
 }
 
-func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
+func (m *Module) UpsertServiceAgreement(a ServiceAgreement) (ServiceAgreement, error) {
 	action := model.ActionCreate
 	if a.Id != "" {
 		action = model.ActionUpdate
@@ -501,54 +491,54 @@ func (m *Module) UpsertAgreement(a Agreement) (Agreement, error) {
 	a.UpdatedAt = time.Now()
 
 	if err := a.Validate(action); err != nil {
-		return Agreement{}, ValidationError{Err: err}
+		return ServiceAgreement{}, ValidationError{Err: err}
 	}
 
 	if action == model.ActionCreate {
 		if err := m.db.Create(&a); err != nil {
-			return Agreement{}, err
+			return ServiceAgreement{}, err
 		}
 		if m.pub != nil {
-			m.pub.Publish(events.Event{Topic: TopicAgreementCreated, Payload: &a})
+			m.pub.Publish(events.Event{Topic: TopicServiceAgreementCreated, Payload: &a})
 		}
 		return a, nil
 	}
 
 	// Verify agreement exists and belongs to tenant
-	_, err := m.GetAgreement(a.TenantId, a.Id)
+	_, err := m.GetServiceAgreement(a.TenantId, a.Id)
 	if err != nil {
-		return Agreement{}, err
+		return ServiceAgreement{}, err
 	}
 
-	if err := m.db.Update(&a, orm.Eq(Agreement_.Id, a.Id), orm.Eq(Agreement_.TenantId, a.TenantId)); err != nil {
-		return Agreement{}, err
+	if err := m.db.Update(&a, orm.Eq(ServiceAgreement_.Id, a.Id), orm.Eq(ServiceAgreement_.TenantId, a.TenantId)); err != nil {
+		return ServiceAgreement{}, err
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicAgreementUpdated, Payload: &a})
+		m.pub.Publish(events.Event{Topic: TopicServiceAgreementUpdated, Payload: &a})
 	}
 	return a, nil
 }
 
-func (m *Module) DeleteAgreement(tenantId, id string) error {
-	a, err := m.GetAgreement(tenantId, id)
+func (m *Module) DeleteServiceAgreement(tenantId, id string) error {
+	a, err := m.GetServiceAgreement(tenantId, id)
 	if err != nil {
 		return err
 	}
 
-	if err := m.db.Delete(&a, orm.Eq(Agreement_.Id, id), orm.Eq(Agreement_.TenantId, tenantId)); err != nil {
+	if err := m.db.Delete(&a, orm.Eq(ServiceAgreement_.Id, id), orm.Eq(ServiceAgreement_.TenantId, tenantId)); err != nil {
 		return err
 	}
 	if m.pub != nil {
-		m.pub.Publish(events.Event{Topic: TopicAgreementDeleted, Payload: &a})
+		m.pub.Publish(events.Event{Topic: TopicServiceAgreementDeleted, Payload: &a})
 	}
 	return nil
 }
 
 // ModelName is this module's identity: mcp.HarvestOps qualifies every op
-// below as "item_catalog.<name>" on the wire, and view.go's two NewXView
+// below as "service_catalog.<name>" on the wire, and view.go's two NewXView
 // constructors pass this same constant as view.Ops.Module so the client
 // composes the identical qualified name.
-const ModelName = "item_catalog"
+const ModelName = "service_catalog"
 
 func (m *Module) ModelName() string { return ModelName }
 
@@ -602,48 +592,48 @@ func (a *DeleteSpecialtiesArgs) DecodeFields(r model.FieldReader) {
 	}
 }
 
-// UpsertItemArgs carries the plural batch for OpUpsertItem.
-type UpsertItemArgs struct {
-	Records []CatalogItem
+// UpsertServiceArgs carries the plural batch for OpUpsertService.
+type UpsertServiceArgs struct {
+	Records []Service
 }
 
-func (a *UpsertItemArgs) ModelName() string     { return "upsert_item_args" }
-func (a *UpsertItemArgs) Schema() []model.Field { return nil }
-func (a *UpsertItemArgs) Pointers() []any       { return nil }
-func (a *UpsertItemArgs) IsNil() bool           { return a == nil }
-func (a *UpsertItemArgs) EncodeFields(w model.FieldWriter) {
+func (a *UpsertServiceArgs) ModelName() string     { return "upsert_item_args" }
+func (a *UpsertServiceArgs) Schema() []model.Field { return nil }
+func (a *UpsertServiceArgs) Pointers() []any       { return nil }
+func (a *UpsertServiceArgs) IsNil() bool           { return a == nil }
+func (a *UpsertServiceArgs) EncodeFields(w model.FieldWriter) {
 	arr := w.Array("records", len(a.Records))
 	for i := range a.Records {
 		arr.Object(&a.Records[i])
 	}
 	arr.Close()
 }
-func (a *UpsertItemArgs) DecodeFields(r model.FieldReader) {
+func (a *UpsertServiceArgs) DecodeFields(r model.FieldReader) {
 	if arr, ok := r.Array("records"); ok {
-		a.Records = make([]CatalogItem, arr.Len())
+		a.Records = make([]Service, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			arr.Object(i, &a.Records[i])
 		}
 	}
 }
 
-// DeleteItemsArgs carries the IDs to remove for OpDeleteItem.
-type DeleteItemsArgs struct {
+// DeleteServicesArgs carries the IDs to remove for OpDeleteService.
+type DeleteServicesArgs struct {
 	Ids []string
 }
 
-func (a *DeleteItemsArgs) ModelName() string     { return "delete_items_args" }
-func (a *DeleteItemsArgs) Schema() []model.Field { return nil }
-func (a *DeleteItemsArgs) Pointers() []any       { return nil }
-func (a *DeleteItemsArgs) IsNil() bool           { return a == nil }
-func (a *DeleteItemsArgs) EncodeFields(w model.FieldWriter) {
+func (a *DeleteServicesArgs) ModelName() string     { return "delete_items_args" }
+func (a *DeleteServicesArgs) Schema() []model.Field { return nil }
+func (a *DeleteServicesArgs) Pointers() []any       { return nil }
+func (a *DeleteServicesArgs) IsNil() bool           { return a == nil }
+func (a *DeleteServicesArgs) EncodeFields(w model.FieldWriter) {
 	arr := w.Array("ids", len(a.Ids))
 	for _, id := range a.Ids {
 		arr.String(id)
 	}
 	arr.Close()
 }
-func (a *DeleteItemsArgs) DecodeFields(r model.FieldReader) {
+func (a *DeleteServicesArgs) DecodeFields(r model.FieldReader) {
 	if arr, ok := r.Array("ids"); ok {
 		a.Ids = make([]string, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
@@ -652,18 +642,18 @@ func (a *DeleteItemsArgs) DecodeFields(r model.FieldReader) {
 	}
 }
 
-// UpdateItemArgs carries the field patch for OpUpdateItem.
-type UpdateItemArgs struct {
+// UpdateServiceArgs carries the field patch for OpUpdateService.
+type UpdateServiceArgs struct {
 	Ids    []string
 	Fields []string
-	Record CatalogItem
+	Record Service
 }
 
-func (a *UpdateItemArgs) ModelName() string     { return "update_item_args" }
-func (a *UpdateItemArgs) Schema() []model.Field { return nil }
-func (a *UpdateItemArgs) Pointers() []any       { return nil }
-func (a *UpdateItemArgs) IsNil() bool           { return a == nil }
-func (a *UpdateItemArgs) EncodeFields(w model.FieldWriter) {
+func (a *UpdateServiceArgs) ModelName() string     { return "update_item_args" }
+func (a *UpdateServiceArgs) Schema() []model.Field { return nil }
+func (a *UpdateServiceArgs) Pointers() []any       { return nil }
+func (a *UpdateServiceArgs) IsNil() bool           { return a == nil }
+func (a *UpdateServiceArgs) EncodeFields(w model.FieldWriter) {
 	ids := w.Array("ids", len(a.Ids))
 	for _, id := range a.Ids {
 		ids.String(id)
@@ -676,7 +666,7 @@ func (a *UpdateItemArgs) EncodeFields(w model.FieldWriter) {
 	fields.Close()
 	w.Object("record", &a.Record)
 }
-func (a *UpdateItemArgs) DecodeFields(r model.FieldReader) {
+func (a *UpdateServiceArgs) DecodeFields(r model.FieldReader) {
 	if arr, ok := r.Array("ids"); ok {
 		a.Ids = make([]string, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
@@ -698,18 +688,18 @@ func (m *Module) MountOperations(reg router.OperationRegistry) {
 	reg.Operation(OpUpsertSpecialty, m.opUpsertSpecialty).Requires("specialty", model.Create|model.Update).Accepts(&UpsertSpecialtyArgs{})
 	reg.Operation(OpDeleteSpecialty, m.opDeleteSpecialty).Requires("specialty", model.Delete).Accepts(&DeleteSpecialtiesArgs{})
 
-	reg.Operation(OpListItems, m.opListItems).Requires("catalog_item", model.Read).Accepts(&ListItemsArgs{})
-	reg.Operation(OpGetItem, m.opGetItem).Requires("catalog_item", model.Read).Accepts(&GetItemArgs{})
-	reg.Operation(OpFindItemBySKU, m.opFindItemBySKU).Requires("catalog_item", model.Read).Accepts(&FindBySKUArgs{})
-	reg.Operation(OpCreateItem, m.opCreateItem).Requires("catalog_item", model.Create).Accepts(&CatalogItem{})
-	reg.Operation(OpUpdateItem, m.opUpdateItem).Requires("catalog_item", model.Update).Accepts(&UpdateItemArgs{})
-	reg.Operation(OpUpsertItem, m.opUpsertItem).Requires("catalog_item", model.Create|model.Update).Accepts(&UpsertItemArgs{})
-	reg.Operation(OpDeactivateItem, m.opDeactivateItem).Requires("catalog_item", model.Update).Accepts(&DeactivateItemArgs{})
-	reg.Operation(OpDeleteItem, m.opDeleteItem).Requires("catalog_item", model.Delete).Accepts(&DeleteItemsArgs{})
+	reg.Operation(OpListServices, m.opListItems).Requires("service", model.Read).Accepts(&ListServicesArgs{})
+	reg.Operation(OpGetService, m.opGetItem).Requires("service", model.Read).Accepts(&GetServiceArgs{})
+	reg.Operation(OpFindServiceBySKU, m.opFindItemBySKU).Requires("service", model.Read).Accepts(&FindServiceBySKUArgs{})
+	reg.Operation(OpCreateService, m.opCreateItem).Requires("service", model.Create).Accepts(&Service{})
+	reg.Operation(OpUpdateService, m.opUpdateItem).Requires("service", model.Update).Accepts(&UpdateServiceArgs{})
+	reg.Operation(OpUpsertService, m.opUpsertItem).Requires("service", model.Create|model.Update).Accepts(&UpsertServiceArgs{})
+	reg.Operation(OpDeactivateService, m.opDeactivateItem).Requires("service", model.Update).Accepts(&DeactivateServiceArgs{})
+	reg.Operation(OpDeleteService, m.opDeleteItem).Requires("service", model.Delete).Accepts(&DeleteServicesArgs{})
 
-	reg.Operation(OpListAgreements, m.opListAgreements).Requires("catalog_agreement", model.Read).Accepts(&ListAgreementsArgs{})
-	reg.Operation(OpUpsertAgreement, m.opUpsertAgreement).Requires("catalog_agreement", model.Create|model.Update).Accepts(&Agreement{})
-	reg.Operation(OpDeleteAgreement, m.opDeleteAgreement).Requires("catalog_agreement", model.Delete).Accepts(&DeleteAgreementArgs{})
+	reg.Operation(OpListAgreements, m.opListServiceAgreements).Requires("service_agreement", model.Read).Accepts(&ListAgreementsArgs{})
+	reg.Operation(OpUpsertAgreement, m.opUpsertServiceAgreement).Requires("service_agreement", model.Create|model.Update).Accepts(&ServiceAgreement{})
+	reg.Operation(OpDeleteAgreement, m.opDeleteServiceAgreement).Requires("service_agreement", model.Delete).Accepts(&DeleteAgreementArgs{})
 }
 
 var _ router.OperationModule = (*Module)(nil)
@@ -794,18 +784,18 @@ func (m *Module) opDeleteSpecialty(ctx router.Context) {
 }
 
 func (m *Module) opListItems(ctx router.Context) {
-	var args ListItemsArgs
+	var args ListServicesArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	filter := ItemFilter{SpecialtyId: args.SpecialtyId, Type: args.Type, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
+	filter := ServiceFilter{SpecialtyId: args.SpecialtyId, ActiveOnly: args.ActiveOnly, Limit: args.Limit, Offset: args.Offset}
 	items, err := m.ListItems(args.TenantId, filter)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
-	list := make(CatalogItemList, len(items))
+	list := make(ServiceList, len(items))
 	for i := range items {
 		list[i] = &items[i]
 	}
@@ -815,7 +805,7 @@ func (m *Module) opListItems(ctx router.Context) {
 }
 
 func (m *Module) opGetItem(ctx router.Context) {
-	var args GetItemArgs
+	var args GetServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -831,7 +821,7 @@ func (m *Module) opGetItem(ctx router.Context) {
 }
 
 func (m *Module) opFindItemBySKU(ctx router.Context) {
-	var args FindBySKUArgs
+	var args FindServiceBySKUArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -847,7 +837,7 @@ func (m *Module) opFindItemBySKU(ctx router.Context) {
 }
 
 func (m *Module) opCreateItem(ctx router.Context) {
-	var item CatalogItem
+	var item Service
 	if err := ctx.Decode(&item); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -863,7 +853,7 @@ func (m *Module) opCreateItem(ctx router.Context) {
 }
 
 func (m *Module) opUpdateItem(ctx router.Context) {
-	var args UpdateItemArgs
+	var args UpdateServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -890,8 +880,6 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 				existing.Sku = args.Record.Sku
 			case "is_active":
 				existing.IsActive = args.Record.IsActive
-			case "type":
-				existing.Type = args.Record.Type
 			case "specialty_id":
 				existing.SpecialtyId = args.Record.SpecialtyId
 			}
@@ -905,7 +893,7 @@ func (m *Module) opUpdateItem(ctx router.Context) {
 }
 
 func (m *Module) opUpsertItem(ctx router.Context) {
-	var args UpsertItemArgs
+	var args UpsertServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -914,9 +902,9 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 		writeError(ctx, ErrNoRecords)
 		return
 	}
-	var last CatalogItem
+	var last Service
 	for _, item := range args.Records {
-		var out CatalogItem
+		var out Service
 		var err error
 		if item.Id == "" {
 			out, err = m.CreateItem(item)
@@ -938,7 +926,7 @@ func (m *Module) opUpsertItem(ctx router.Context) {
 }
 
 func (m *Module) opDeactivateItem(ctx router.Context) {
-	var args DeactivateItemArgs
+	var args DeactivateServiceArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -951,7 +939,7 @@ func (m *Module) opDeactivateItem(ctx router.Context) {
 }
 
 func (m *Module) opDeleteItem(ctx router.Context) {
-	var args DeleteItemsArgs
+	var args DeleteServicesArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
@@ -969,18 +957,18 @@ func (m *Module) opDeleteItem(ctx router.Context) {
 	ctx.WriteStatus(200)
 }
 
-func (m *Module) opListAgreements(ctx router.Context) {
+func (m *Module) opListServiceAgreements(ctx router.Context) {
 	var args ListAgreementsArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	items, err := m.ListAgreements(args.TenantId, args.CatalogItemId)
+	items, err := m.ListServiceAgreements(args.TenantId, args.ServiceId)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
-	list := make(AgreementList, len(items))
+	list := make(ServiceAgreementList, len(items))
 	for i := range items {
 		list[i] = &items[i]
 	}
@@ -989,13 +977,13 @@ func (m *Module) opListAgreements(ctx router.Context) {
 	}
 }
 
-func (m *Module) opUpsertAgreement(ctx router.Context) {
-	var a Agreement
+func (m *Module) opUpsertServiceAgreement(ctx router.Context) {
+	var a ServiceAgreement
 	if err := ctx.Decode(&a); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	out, err := m.UpsertAgreement(a)
+	out, err := m.UpsertServiceAgreement(a)
 	if err != nil {
 		writeError(ctx, err)
 		return
@@ -1005,13 +993,13 @@ func (m *Module) opUpsertAgreement(ctx router.Context) {
 	}
 }
 
-func (m *Module) opDeleteAgreement(ctx router.Context) {
+func (m *Module) opDeleteServiceAgreement(ctx router.Context) {
 	var args DeleteAgreementArgs
 	if err := ctx.Decode(&args); err != nil {
 		writeError(ctx, decodeError{err})
 		return
 	}
-	if err := m.DeleteAgreement(args.TenantId, args.Id); err != nil {
+	if err := m.DeleteServiceAgreement(args.TenantId, args.Id); err != nil {
 		writeError(ctx, err)
 		return
 	}

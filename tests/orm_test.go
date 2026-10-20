@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/form"
 	"webtyp.com/model"
 	"webtyp.com/orm"
@@ -12,14 +12,13 @@ import (
 )
 
 func TestEncodeDecodeRoundtrip(t *testing.T) {
-	item := itemcatalog.CatalogItem{
+	item := servicecatalog.Service{
 		Id:          "item-123",
 		TenantId:    "tenant-1",
 		SpecialtyId: "spec-123",
 		Sku:         "SKU-1",
 		Name:        "Name 1",
 		Description: "Desc 1",
-		Type:        itemcatalog.ItemTypeService,
 		Price:       150.0,
 		Currency:    "USD",
 		IsActive:    true,
@@ -33,7 +32,7 @@ func TestEncodeDecodeRoundtrip(t *testing.T) {
 
 	ctx.InBody = ctx.ResponseBody()
 
-	var decoded itemcatalog.CatalogItem
+	var decoded servicecatalog.Service
 	if err := ctx.Decode(&decoded); err != nil {
 		t.Fatal(err)
 	}
@@ -44,30 +43,29 @@ func TestEncodeDecodeRoundtrip(t *testing.T) {
 }
 
 func TestSchemaPointersLength(t *testing.T) {
-	spec := &itemcatalog.Specialty{}
+	spec := &servicecatalog.Specialty{}
 	if len(spec.Schema()) != len(spec.Pointers()) {
 		t.Errorf("expected len(Schema) %d == len(Pointers) %d", len(spec.Schema()), len(spec.Pointers()))
 	}
 
-	item := &itemcatalog.CatalogItem{}
+	item := &servicecatalog.Service{}
 	if len(item.Schema()) != len(item.Pointers()) {
 		t.Errorf("expected len(Schema) %d == len(Pointers) %d", len(item.Schema()), len(item.Pointers()))
 	}
 
-	ag := &itemcatalog.Agreement{}
+	ag := &servicecatalog.ServiceAgreement{}
 	if len(ag.Schema()) != len(ag.Pointers()) {
 		t.Errorf("expected len(Schema) %d == len(Pointers) %d", len(ag.Schema()), len(ag.Pointers()))
 	}
 }
 
 func TestValidateConstraints(t *testing.T) {
-	goodItem := itemcatalog.CatalogItem{
+	goodItem := servicecatalog.Service{
 		Id:          "item-1",
 		TenantId:    "tenant-1",
 		SpecialtyId: "spec-1",
 		Sku:         "SKU-1",
 		Name:        "Good Item",
-		Type:        itemcatalog.ItemTypeService,
 		Price:       100.0,
 		Currency:    "USD",
 		IsActive:    true,
@@ -86,16 +84,12 @@ func TestValidateConstraints(t *testing.T) {
 
 	// For invalid type "X", we check via the service layer validation!
 	db := orm.New(mem.New())
-	module, _ := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
-	badItemInvalidType := goodItem
-	badItemInvalidType.Type = "X"
-	if _, err := module.CreateItem(badItemInvalidType); err == nil {
-		t.Error("expected invalid type X to be rejected by CreateItem")
-	}
+	_, _ = servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
+
 }
 
 func TestFormInputsGeneration(t *testing.T) {
-	item := &itemcatalog.CatalogItem{}
+	item := &servicecatalog.Service{}
 	f, err := form.New("parent", item, &MockIDGen{})
 	if err != nil {
 		t.Fatalf("failed to create form: %v", err)
@@ -104,7 +98,7 @@ func TestFormInputsGeneration(t *testing.T) {
 	// We expect the form to contain editable input widgets for user-editable fields,
 	// and NOT for machine-managed fields (id, tenant_id, updated_at).
 	// specialty_id is an input.Select() field, so editable form input fields are:
-	editableFields := []string{"specialty_id", "sku", "name", "description", "type", "price", "currency", "is_active"}
+	editableFields := []string{"specialty_id", "sku", "name", "description", "tax_treatment", "price", "currency", "is_active"}
 	for _, field := range f.Inputs {
 		name := field.FieldName()
 		isEditable := false
@@ -122,15 +116,15 @@ func TestFormInputsGeneration(t *testing.T) {
 
 func TestErrorAndModelName(t *testing.T) {
 	// Cover ValidationError.Error
-	ve := itemcatalog.ValidationError{Err: itemcatalog.ErrNotFound}
+	ve := servicecatalog.ValidationError{Err: servicecatalog.ErrNotFound}
 	if ve.Error() == "" {
 		t.Error("expected ValidationError.Error to carry the wrapped message")
 	}
 
 	// Cover Module.ModelName
 	db := orm.New(mem.New())
-	module, _ := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
-	if module.ModelName() != itemcatalog.ModelName {
-		t.Errorf("expected ModelName %q, got %q", itemcatalog.ModelName, module.ModelName())
+	module, _ := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
+	if module.ModelName() != servicecatalog.ModelName {
+		t.Errorf("expected ModelName %q, got %q", servicecatalog.ModelName, module.ModelName())
 	}
 }

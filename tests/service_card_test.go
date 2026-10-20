@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	itemcatalog "github.com/veltylabs/item_catalog"
+	servicecatalog "github.com/veltylabs/service_catalog"
 	"webtyp.com/fmt"
 	"webtyp.com/model"
 	"webtyp.com/orm"
@@ -13,26 +13,26 @@ import (
 
 func TestServiceCard_EmptyArgsNotFound(t *testing.T) {
 	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	_, _, _, _, err = module.ServiceCard("", "")
-	if err != itemcatalog.ErrNotFound {
+	if err != servicecatalog.ErrNotFound {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 }
 
 func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create specialty
-	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
 	})
 	if err != nil {
@@ -40,10 +40,9 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 	}
 
 	// Create service
-	item, err := module.CreateItem(itemcatalog.CatalogItem{
+	item, err := module.CreateItem(servicecatalog.Service{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
-		Type:        itemcatalog.ItemTypeService,
 		Sku:         "sku",
 		Name:        "Service",
 		Price:       100,
@@ -55,12 +54,12 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 	}
 
 	_, _, _, _, err = module.ServiceCard("t2", item.Id)
-	if err != itemcatalog.ErrNotFound {
+	if err != servicecatalog.ErrNotFound {
 		t.Fatalf("expected ErrNotFound for wrong tenant, got %v", err)
 	}
 
 	_, _, _, _, err = module.ServiceCard("t1", "unknown")
-	if err != itemcatalog.ErrNotFound {
+	if err != servicecatalog.ErrNotFound {
 		t.Fatalf("expected ErrNotFound for unknown id, got %v", err)
 	}
 }
@@ -78,13 +77,13 @@ func TestServiceCard_StorageErrorPropagates(t *testing.T) {
 	// Use mem.New() as the underlying storage, but wrap it in our errConn
 	underlying := mem.New()
 	db := orm.New(&errConn{Conn: underlying})
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	_, _, _, _, err = module.ServiceCard("t", "id")
-	if err == nil || err == itemcatalog.ErrNotFound {
+	if err == nil || err == servicecatalog.ErrNotFound {
 		t.Fatalf("expected arbitrary error, got %v", err)
 	}
 	if err.Error() != "db error" {
@@ -92,58 +91,23 @@ func TestServiceCard_StorageErrorPropagates(t *testing.T) {
 	}
 }
 
-func TestServiceCard_ProductIsNotFound(t *testing.T) {
-	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
-		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	item, err := module.CreateItem(itemcatalog.CatalogItem{
-		TenantId:    "t1",
-		SpecialtyId: spec.Id,
-		Type:        itemcatalog.ItemTypeProduct, // Es producto
-		Sku:         "sku",
-		Name:        "Product",
-		Price:       100,
-		Currency:    "USD",
-		IsActive:    true,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, _, _, _, err = module.ServiceCard("t1", item.Id)
-	if err != itemcatalog.ErrNotFound {
-		t.Fatalf("expected ErrNotFound for product, got %v", err)
-	}
-}
-
 func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 	db := orm.New(mem.New())
-	module, err := itemcatalog.New(db, itemcatalog.Deps{IDs: &MockIDGen{}})
+	module, err := servicecatalog.New(db, servicecatalog.Deps{IDs: &MockIDGen{}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	spec, err := module.UpsertSpecialty(itemcatalog.Specialty{
+	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	activeItem, err := module.CreateItem(itemcatalog.CatalogItem{
+	activeItem, err := module.CreateItem(servicecatalog.Service{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
-		Type:        itemcatalog.ItemTypeService,
 		Sku:         "sku1",
 		Name:        "Active Service",
 		Price:       1000.50,
@@ -154,10 +118,9 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	inactiveItem, err := module.CreateItem(itemcatalog.CatalogItem{
+	inactiveItem, err := module.CreateItem(servicecatalog.Service{
 		TenantId:    "t1",
 		SpecialtyId: spec.Id,
-		Type:        itemcatalog.ItemTypeService,
 		Sku:         "sku2",
 		Name:        "Inactive Service",
 		Price:       500,

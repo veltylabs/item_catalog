@@ -1,15 +1,8 @@
-package itemcatalog
+package servicecatalog
 
 import (
-	"webtyp.com/fmt"
 	"webtyp.com/input"
 	"webtyp.com/model"
-)
-
-// Exported, greppable, the ONLY place these literals exist:
-const (
-	ItemTypeService = "S"
-	ItemTypeProduct = "P"
 )
 
 // Helpers to satisfy ormc v0.9.24 AST static type parser:
@@ -21,15 +14,10 @@ var (
 	BaseInt_FieldInt   = model.Int()
 )
 
-// itemType: closed-options radio widget for the `type` field. input.Radio
-// takes the option list directly (webtyp.com/input v0.0.7+), so this no
-// longer needs its own input.Base-embedding type + Clone().
-func itemType() input.Input {
-	return input.Radio(
-		fmt.KeyValue{Key: ItemTypeService, Value: "Service"},
-		fmt.KeyValue{Key: ItemTypeProduct, Value: "Product"},
-	)
-}
+const (
+	TaxTaxed  = "TAXED"
+	TaxExempt = "EXEMPT"
+)
 
 var SpecialtyModel = model.Definition{
 	Name: "specialty",
@@ -49,20 +37,20 @@ var SpecialtyModel = model.Definition{
 		{Name: "name", Type: input.Text(), Label: "Name", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Tilde: true, Spaces: true, Extra: []rune{'+', '(', ')'}, Minimum: 1, Maximum: 100}},
 		{Name: "description", Type: input.Textarea(), Label: "Description", OmitEmpty: true},
-		{Name: "position", Type: BaseInt_FieldInt, OmitEmpty: true},
+		{Name: "position", Type: model.Int(), OmitEmpty: true},
 		// NotNull deliberadamente ausente: para un bool, NotNull rechaza el
 		// zero value (ValidateFields: field.NotNull && IsZeroPtr, y
 		// IsZeroPtr para FieldBool es !*p) — con NotNull:true sería
 		// imposible crear una especialidad SIN publicar, justo lo opuesto
 		// de "cerrado por defecto". El false-por-defecto ya lo garantiza
 		// el zero value de Go, no una restricción de esquema.
-		{Name: "is_published", Type: Checkbox_FieldBool, Label: "Published"},
-		{Name: "updated_at", Type: BaseInt_FieldInt, OmitEmpty: true},
+		{Name: "is_published", Type: input.Checkbox(), Label: "Published"},
+		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
 	},
 }
 
-var CatalogItemModel = model.Definition{
-	Name: "catalog_item",
+var ServiceModel = model.Definition{
+	Name: "service",
 	Fields: model.Fields{
 		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
@@ -70,52 +58,50 @@ var CatalogItemModel = model.Definition{
 		{Name: "sku", Type: input.Text(), Label: "SKU", NotNull: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
 		{Name: "name", Type: input.Text(), Label: "Name", NotNull: true, Permitted: model.Permitted{Minimum: 1, Maximum: 255}},
 		{Name: "description", Type: input.Textarea(), Label: "Description", OmitEmpty: true},
-		{Name: "type", Type: itemType(), Label: "Type", NotNull: true},
-		{Name: "price", Type: Decimal_FieldFloat, Label: "Price", NotNull: true},
+		{Name: "tax_treatment", Type: input.Select(), Label: "Tax treatment", OmitEmpty: true},
+		{Name: "price", Type: input.Decimal(), Label: "Price", NotNull: true},
 		{Name: "currency", Type: input.Text(), Label: "Currency", NotNull: true, Permitted: model.Permitted{Letters: true, Minimum: 3, Maximum: 3}},
-		{Name: "is_active", Type: Checkbox_FieldBool, Label: "Active", NotNull: true},
-		{Name: "updated_at", Type: BaseInt_FieldInt, OmitEmpty: true},
+		{Name: "is_active", Type: input.Checkbox(), Label: "Active", NotNull: true},
+		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
 	},
 }
 
-var AgreementModel = model.Definition{
-	Name: "catalog_agreement",
+var ServiceAgreementModel = model.Definition{
+	Name: "service_agreement",
 	Fields: model.Fields{
 		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
-		{Name: "catalog_item_id", Type: model.Text(), Ref: &CatalogItemModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
+		{Name: "service_id", Type: model.Text(), Ref: &ServiceModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
 		{Name: "insurer", Type: input.Text(), Label: "Insurer", NotNull: true, Permitted: model.Permitted{Letters: true, Spaces: true, Minimum: 1, Maximum: 100}},
 		{Name: "code", Type: input.Text(), Label: "Code", OmitEmpty: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
-		{Name: "price", Type: Decimal_FieldFloat, Label: "Price", OmitEmpty: true},
-		{Name: "is_active", Type: Checkbox_FieldBool, Label: "Active", NotNull: true},
-		{Name: "updated_at", Type: BaseInt_FieldInt, OmitEmpty: true},
+		{Name: "price", Type: input.Decimal(), Label: "Price", OmitEmpty: true},
+		{Name: "is_active", Type: input.Checkbox(), Label: "Active", NotNull: true},
+		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
 	},
 }
 
-var ItemFilterModel = model.Definition{
+var ServiceFilterModel = model.Definition{
 	Name: "item_filter",
 	Fields: model.Fields{
 		{Name: "specialty_id", Type: model.Text()},
-		{Name: "type", Type: model.Text()},
-		{Name: "active_only", Type: BaseBool_FieldBool},
-		{Name: "limit", Type: BaseInt_FieldInt},
-		{Name: "offset", Type: BaseInt_FieldInt},
+		{Name: "active_only", Type: model.Bool()},
+		{Name: "limit", Type: model.Int()},
+		{Name: "offset", Type: model.Int()},
 	},
 }
 
-var ListItemsArgsModel = model.Definition{
+var ListServicesArgsModel = model.Definition{
 	Name: "list_items_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
 		{Name: "specialty_id", Type: model.Text()},
-		{Name: "type", Type: model.Text()},
-		{Name: "active_only", Type: BaseBool_FieldBool},
-		{Name: "limit", Type: BaseInt_FieldInt},
-		{Name: "offset", Type: BaseInt_FieldInt},
+		{Name: "active_only", Type: model.Bool()},
+		{Name: "limit", Type: model.Int()},
+		{Name: "offset", Type: model.Int()},
 	},
 }
 
-var GetItemArgsModel = model.Definition{
+var GetServiceArgsModel = model.Definition{
 	Name: "get_item_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
@@ -123,7 +109,7 @@ var GetItemArgsModel = model.Definition{
 	},
 }
 
-var FindBySKUArgsModel = model.Definition{
+var FindServiceBySKUArgsModel = model.Definition{
 	Name: "find_by_sku_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
@@ -131,7 +117,7 @@ var FindBySKUArgsModel = model.Definition{
 	},
 }
 
-var DeactivateItemArgsModel = model.Definition{
+var DeactivateServiceArgsModel = model.Definition{
 	Name: "deactivate_item_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
@@ -139,7 +125,7 @@ var DeactivateItemArgsModel = model.Definition{
 	},
 }
 
-var DeleteItemArgsModel = model.Definition{
+var DeleteServiceArgsModel = model.Definition{
 	Name: "delete_item_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
@@ -151,7 +137,7 @@ var ListAgreementsArgsModel = model.Definition{
 	Name: "list_agreements_args",
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
-		{Name: "catalog_item_id", Type: model.Text()},
+		{Name: "service_id", Type: model.Text()},
 	},
 }
 

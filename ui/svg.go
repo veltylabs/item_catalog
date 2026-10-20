@@ -6,7 +6,6 @@ import (
 	"webtyp.com/svg/sprite"
 )
 
-
 // Icons es un tipo que aloja IconID/IconSvg para su descubrimiento y uso en config.
 type Icons struct{}
 
@@ -26,4 +25,3 @@ func (m *Icons) IconSvg() *sprite.Sprite {
 		),
 	)
 }
-
