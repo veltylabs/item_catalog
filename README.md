@@ -76,7 +76,10 @@ This module carries its own UI component (`ui/`), seed data (`seed/`), and runna
 | File | Purpose |
 |------|---------|
 | `model.go` | Data structures and schemas |
-| `mcp.go` | Core logic and transport operations |
+| `module.go` | `Deps`, `New`, the domain methods and the readers (`ServiceExists`, `ServiceCard`) |
+| `errors.go` | error constants, `statusOf`, `writeError` |
+| `ops.go` | operation names, the wire shapes of the view, `MountOperations` and the handlers |
+| `recipe.go` | the supply recipe of a service and its reader `ServiceRecipe` |
 | `migration.go` | SKU prefix to specialty migration |
 | `model_orm.go` | Generated ORM helpers |
 | `ui/` | Module view presenter and components |

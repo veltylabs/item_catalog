@@ -80,6 +80,36 @@ var ServiceAgreementModel = model.Definition{
 	},
 }
 
+// ServiceSupplyModel is one line of the supply recipe of a service: what one performance of the service uses. item_id is a
+// soft reference to an item of supply_manager (this module never imports it); quantity is in the item's own unit.
+var ServiceSupplyModel = model.Definition{
+	Name: "service_supply",
+	Fields: model.Fields{
+		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
+		{Name: "tenant_id", Type: model.Text(), NotNull: true},
+		{Name: "service_id", Type: model.Text(), Ref: &ServiceModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
+		{Name: "item_id", Type: model.Text(), NotNull: true},
+		{Name: "quantity", Type: input.Decimal(), Label: "Quantity", NotNull: true},
+		{Name: "updated_at", Type: model.Int(), OmitEmpty: true},
+	},
+}
+
+var ListServiceSuppliesArgsModel = model.Definition{
+	Name: "list_service_supplies_args",
+	Fields: model.Fields{
+		{Name: "tenant_id", Type: model.Text()},
+		{Name: "service_id", Type: model.Text()},
+	},
+}
+
+var DeleteServiceSupplyArgsModel = model.Definition{
+	Name: "delete_service_supply_args",
+	Fields: model.Fields{
+		{Name: "tenant_id", Type: model.Text()},
+		{Name: "id", Type: model.Text()},
+	},
+}
+
 var ServiceFilterModel = model.Definition{
 	Name: "item_filter",
 	Fields: model.Fields{

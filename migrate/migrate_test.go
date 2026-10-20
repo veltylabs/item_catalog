@@ -21,13 +21,13 @@ func (d *dummyCompiler) CompileDDL(stmt ddl.Stmt, m model.Model) (string, []any,
 	return stmt.Table, nil, nil
 }
 
-func TestMigrate_CreatesAllThreeTablesInOrder(t *testing.T) {
+func TestMigrate_CreatesAllTablesInOrder(t *testing.T) {
 	execer := &dummyExecer{}
 	err := migrate.Migrate(execer, &dummyCompiler{})
 	if err != nil {
 		t.Fatalf("Migrate returned error: %v", err)
 	}
-	want := []string{"specialty", "service", "service_agreement"}
+	want := []string{"specialty", "service", "service_supply", "service_agreement"}
 	if len(execer.calls) != len(want) {
 		t.Fatalf("got %d Exec calls, want %d: %v", len(execer.calls), len(want), execer.calls)
 	}

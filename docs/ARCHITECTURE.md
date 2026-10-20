@@ -61,3 +61,11 @@ appt := appointmentbooking.New(db, appointmentbooking.Deps{Catalog: cat, ...})
 
 ### Database Note
 There is no production data. Development databases are recreated: `Migrate` creates `specialty`, `service` and `service_agreement` (in that FK order). It never drops the old `catalog_item` / `catalog_agreement` tables.
+
+## Supply recipe
+
+A service has a **recipe**: the supplies one performance uses (`service_supply`: service, `item_id` of `supply_manager` as a
+soft reference, quantity > 0, each supply once per service). `ServiceRecipe(tenantId, serviceId) (itemIds []string,
+quantities []float64, err error)` returns it with plain types, so `clinical_encounter` declares it in a narrow interface of
+its own and the application passes this module. This module never imports `supply_manager`; the supply picker of the
+service screen comes with the screens that follow the module-guidance rules.

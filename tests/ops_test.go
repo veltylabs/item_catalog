@@ -12,7 +12,7 @@ import (
 	"webtyp.com/storage/mem"
 )
 
-func TestMCPOperations(t *testing.T) {
+func TestOperations(t *testing.T) {
 	db := orm.New(mem.New())
 	pub := &MockPublisher{}
 	module, err := servicecatalog.New(db, servicecatalog.Deps{
@@ -329,7 +329,7 @@ func TestMCPOperations(t *testing.T) {
 	}
 }
 
-func TestMCPOperationsErrorPaths(t *testing.T) {
+func TestOperationsErrorPaths(t *testing.T) {
 	db := orm.New(mem.New())
 	module, err := servicecatalog.New(db, servicecatalog.Deps{
 		IDs: &MockIDGen{},

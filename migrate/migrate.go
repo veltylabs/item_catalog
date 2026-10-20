@@ -32,6 +32,9 @@ func Migrate(conn ddl.Execer, ddlCompiler ddl.Compiler) error {
 	if err := d.CreateTable(&servicecatalog.Service{}); err != nil {
 		return err
 	}
+	if err := d.CreateTable(&servicecatalog.ServiceSupply{}); err != nil {
+		return err
+	}
 	if err := d.CreateTable(&servicecatalog.ServiceAgreement{}); err != nil {
 		return err
 	}

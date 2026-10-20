@@ -402,6 +402,203 @@ func (m *ServiceAgreement) SchemaExt() []model.FieldExt {
 	}
 }
 
+type ServiceSupply struct {
+	Id        string
+	TenantId  string
+	ServiceId string
+	ItemId    string
+	Quantity  float64
+	UpdatedAt int64
+}
+
+func (m *ServiceSupply) ModelName() string { return "service_supply" }
+
+func (m *ServiceSupply) Schema() []model.Field { return ServiceSupplyModel.Fields }
+
+func (m *ServiceSupply) Pointers() []any {
+	return []any{&m.Id, &m.TenantId, &m.ServiceId, &m.ItemId, &m.Quantity, &m.UpdatedAt}
+}
+
+func (m *ServiceSupply) IsNil() bool { return m == nil }
+
+func (m *ServiceSupply) EncodeFields(w model.FieldWriter) {
+	if m.Id != "" {
+		w.String("id", m.Id)
+	}
+	w.String("tenant_id", m.TenantId)
+	w.String("service_id", m.ServiceId)
+	w.String("item_id", m.ItemId)
+	w.Float("quantity", m.Quantity)
+	if m.UpdatedAt != 0 {
+		w.Int("updated_at", m.UpdatedAt)
+	}
+}
+
+func (m *ServiceSupply) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("service_id"); ok {
+		m.ServiceId = v
+	}
+	if v, ok := r.String("item_id"); ok {
+		m.ItemId = v
+	}
+	if v, ok := r.Float("quantity"); ok {
+		m.Quantity = v
+	}
+	if v, ok := r.Int("updated_at"); ok {
+		m.UpdatedAt = v
+	}
+}
+
+type ServiceSupplyList []*ServiceSupply
+
+func (s *ServiceSupplyList) Len() int               { return len(*s) }
+func (s *ServiceSupplyList) At(i int) model.Fielder { return (*s)[i] }
+func (s *ServiceSupplyList) Append() model.Fielder {
+	v := &ServiceSupply{}
+	*s = append(*s, v)
+	return v
+}
+func (s *ServiceSupplyList) IsNil() bool                      { return s == nil }
+func (s *ServiceSupplyList) EncodeFields(_ model.FieldWriter) {}
+func (s *ServiceSupplyList) DecodeFields(_ model.FieldReader) {}
+
+func (m *ServiceSupply) Validate(action byte) error {
+	return model.ValidateFields(action, m)
+}
+
+var ServiceSupply_ = struct {
+	Id        string
+	TenantId  string
+	ServiceId string
+	ItemId    string
+	Quantity  string
+	UpdatedAt string
+}{
+	Id:        "id",
+	TenantId:  "tenant_id",
+	ServiceId: "service_id",
+	ItemId:    "item_id",
+	Quantity:  "quantity",
+	UpdatedAt: "updated_at",
+}
+
+func ReadOneServiceSupply(qb *orm.QB, model *ServiceSupply) (*ServiceSupply, error) {
+	err := qb.ReadOne()
+	if err != nil {
+		return nil, err
+	}
+	return model, nil
+}
+
+func ReadAllServiceSupply(qb *orm.QB) (ServiceSupplyList, error) {
+	var results ServiceSupplyList
+	err := qb.ReadAll(
+		func() model.Model { return &ServiceSupply{} },
+		func(m model.Model) { results = append(results, m.(*ServiceSupply)) },
+	)
+	return results, err
+}
+
+func (m *ServiceSupply) SchemaExt() []model.FieldExt {
+	return []model.FieldExt{
+		{Field: ServiceSupplyModel.Fields[2], Ref: "service", RefColumn: "id", OnDelete: ""},
+	}
+}
+
+type ListServiceSuppliesArgs struct {
+	TenantId  string
+	ServiceId string
+}
+
+func (m *ListServiceSuppliesArgs) ModelName() string { return "list_service_supplies_args" }
+
+func (m *ListServiceSuppliesArgs) Schema() []model.Field { return ListServiceSuppliesArgsModel.Fields }
+
+func (m *ListServiceSuppliesArgs) Pointers() []any { return []any{&m.TenantId, &m.ServiceId} }
+
+func (m *ListServiceSuppliesArgs) IsNil() bool { return m == nil }
+
+func (m *ListServiceSuppliesArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("service_id", m.ServiceId)
+}
+
+func (m *ListServiceSuppliesArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("service_id"); ok {
+		m.ServiceId = v
+	}
+}
+
+type ListServiceSuppliesArgsList []*ListServiceSuppliesArgs
+
+func (s *ListServiceSuppliesArgsList) Len() int               { return len(*s) }
+func (s *ListServiceSuppliesArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *ListServiceSuppliesArgsList) Append() model.Fielder {
+	v := &ListServiceSuppliesArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *ListServiceSuppliesArgsList) IsNil() bool                      { return s == nil }
+func (s *ListServiceSuppliesArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *ListServiceSuppliesArgsList) DecodeFields(_ model.FieldReader) {}
+
+func (m *ListServiceSuppliesArgs) Validate(action byte) error {
+	return model.ValidateFields(action, m)
+}
+
+type DeleteServiceSupplyArgs struct {
+	TenantId string
+	Id       string
+}
+
+func (m *DeleteServiceSupplyArgs) ModelName() string { return "delete_service_supply_args" }
+
+func (m *DeleteServiceSupplyArgs) Schema() []model.Field { return DeleteServiceSupplyArgsModel.Fields }
+
+func (m *DeleteServiceSupplyArgs) Pointers() []any { return []any{&m.TenantId, &m.Id} }
+
+func (m *DeleteServiceSupplyArgs) IsNil() bool { return m == nil }
+
+func (m *DeleteServiceSupplyArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+	w.String("id", m.Id)
+}
+
+func (m *DeleteServiceSupplyArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok {
+		m.TenantId = v
+	}
+	if v, ok := r.String("id"); ok {
+		m.Id = v
+	}
+}
+
+type DeleteServiceSupplyArgsList []*DeleteServiceSupplyArgs
+
+func (s *DeleteServiceSupplyArgsList) Len() int               { return len(*s) }
+func (s *DeleteServiceSupplyArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *DeleteServiceSupplyArgsList) Append() model.Fielder {
+	v := &DeleteServiceSupplyArgs{}
+	*s = append(*s, v)
+	return v
+}
+func (s *DeleteServiceSupplyArgsList) IsNil() bool                      { return s == nil }
+func (s *DeleteServiceSupplyArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *DeleteServiceSupplyArgsList) DecodeFields(_ model.FieldReader) {}
+
+func (m *DeleteServiceSupplyArgs) Validate(action byte) error {
+	return model.ValidateFields(action, m)
+}
+
 type ServiceFilter struct {
 	SpecialtyId string
 	ActiveOnly  bool
