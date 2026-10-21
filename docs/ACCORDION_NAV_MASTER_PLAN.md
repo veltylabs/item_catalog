@@ -49,7 +49,7 @@ flowchart TD
 | Repositorio / Librería | Archivo del Plan | Estado | Descripción del Cambio |
 |------------------------|------------------|--------|------------------------|
 | `webtyp/layout` | `docs/LAST_PLAN_EXECUTED.md` | COMPLETADO | Soporte de `GroupModule`, acordeón en `platformd`, chevron con rotación de 180°, submenú anidado con fondo Secondary, sin doble selección en el padre, y tests 100% verdes. |
-| `veltylabs/modules/item_catalog` | `docs/LAST_PLAN_EXECUTED.md` | VALIDACIÓN VISUAL | Reemplazo de `decktabs` por `NewGroupUIModule`, íconos para Servicios y Especialidades, módulos ficticios Inicio/Ajustes agregados en `web/client.go` para pruebas. |
+| `veltylabs/modules/item_catalog` | `docs/LAST_PLAN_EXECUTED.md` | VALIDACIÓN VISUAL | Reemplazo de `decktabs` por `NewGroupUIModule`, íconos para Servicios y Especialidades, módulos ficticios Inicio/Ajustes agregados en `web/browser.go` para pruebas. |
 | `webtyp/layout/chatview` | (Fase 3) | PENDIENTE | Migración de tabs a acordeón tras aprobación visual final. |
 | `webtyp/components` | (Fase 3) | PENDIENTE | Eliminación física del paquete `decktabs/` y publicación en cascada con `gopush`. |
 
