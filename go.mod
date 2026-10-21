@@ -32,5 +32,5 @@ require (
 	webtyp.com/font v0.0.6 // indirect
 	webtyp.com/icons v0.0.26 // indirect
 	webtyp.com/lang v0.1.7 // indirect
-	webtyp.com/widget v0.6.43 // indirect
+	webtyp.com/widget v0.6.44 // indirect
 )
