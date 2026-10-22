@@ -3,6 +3,8 @@ PLAN: "feat!: one reference code per specialty, currency from the module's list,
 TAG: v0.2.0
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 11217939919563474590
 ---
 
 > Read AGENTS.md at the repo root before any change.
