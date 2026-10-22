@@ -69,11 +69,11 @@ func TestOpErrors_SayWhy(t *testing.T) {
 		wantRefused(t, invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, args)), 400, "")
 	})
 	t.Run("duplicate prefix", func(t *testing.T) {
-		first := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1", Prefix: "md", Slug: "medicina", Name: "Medicina"}}}
+		first := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1", Prefix: "md", Name: "Medicina"}}}
 		if ctx := invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, first)); ctx.Status != 0 && ctx.Status != 200 {
 			t.Fatalf("first specialty: %d %s", ctx.Status, ctx.ResponseBody())
 		}
-		again := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1", Prefix: "md", Slug: "otra", Name: "Otra"}}}
+		again := &servicecatalog.UpsertSpecialtyArgs{Records: []servicecatalog.Specialty{{TenantId: "t1", Prefix: "md", Name: "Otra"}}}
 		wantRefused(t, invoke(r, servicecatalog.OpUpsertSpecialty, encode(t, again)), 409, servicecatalog.ErrSpecialtyPrefixExists.Error())
 	})
 	t.Run("not found", func(t *testing.T) {

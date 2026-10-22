@@ -22,6 +22,7 @@ const (
 	OpDeactivateService = "deactivate_service"
 	OpDeleteService     = "delete_service"
 
+	OpListCurrencies = "list_currencies"
 	OpListAgreements  = "list_agreements"
 	OpUpsertAgreement = "upsert_agreement"
 	OpDeleteAgreement = "delete_agreement"
@@ -181,6 +182,8 @@ func (m *Module) MountOperations(reg router.OperationRegistry) {
 	reg.Operation(OpUpsertService, m.opUpsertService).Requires("service", model.Create|model.Update).Accepts(&UpsertServiceArgs{})
 	reg.Operation(OpDeactivateService, m.opDeactivateService).Requires("service", model.Update).Accepts(&DeactivateServiceArgs{})
 	reg.Operation(OpDeleteService, m.opDeleteService).Requires("service", model.Delete).Accepts(&DeleteServicesArgs{})
+
+	reg.Operation(OpListCurrencies, m.opListCurrencies).Requires("service", model.Read).Accepts(&ListCurrenciesArgs{})
 
 	reg.Operation(OpListAgreements, m.opListServiceAgreements).Requires("service_agreement", model.Read).Accepts(&ListAgreementsArgs{})
 	reg.Operation(OpUpsertAgreement, m.opUpsertServiceAgreement).Requires("service_agreement", model.Create|model.Update).Accepts(&ServiceAgreement{})
@@ -493,4 +496,22 @@ func (m *Module) opDeleteServiceAgreement(ctx router.Context) {
 		return
 	}
 	ctx.WriteStatus(200)
+}
+
+
+func (m *Module) opListCurrencies(ctx router.Context) {
+	var args ListCurrenciesArgs
+	if err := ctx.Decode(&args); err != nil {
+		writeError(ctx, decodeError{err})
+		return
+	}
+
+	list := make(CurrencyOptionList, len(m.currencies))
+	for i, c := range m.currencies {
+		list[i] = &CurrencyOption{Code: c}
+	}
+
+	if err := ctx.Encode(&list); err != nil {
+		writeError(ctx, err)
+	}
 }

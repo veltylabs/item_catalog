@@ -20,8 +20,9 @@ func TestEncodeDecodeRoundtrip(t *testing.T) {
 		Name:        "Name 1",
 		Description: "Desc 1",
 		Price:       150.0,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 		UpdatedAt:   123456,
 	}
 
@@ -67,8 +68,9 @@ func TestValidateConstraints(t *testing.T) {
 		Sku:         "SKU-1",
 		Name:        "Good Item",
 		Price:       100.0,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 		UpdatedAt:   12345,
 	}
 

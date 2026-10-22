@@ -6,26 +6,25 @@ import (
 
 type CanonicalSpecialty struct {
 	Prefix string
-	Slug   string
 	Name   string
 }
 
 // CanonicalSpecialties defines the list of standard specialties derived from SKU prefixes.
 var CanonicalSpecialties = []CanonicalSpecialty{
-	{Prefix: "md", Slug: "medicina-general", Name: "Medicina General"},
-	{Prefix: "do", Slug: "dental", Name: "Dental (Odontología + Ortodoncia)"},
-	{Prefix: "tr", Slug: "traumatologia", Name: "Traumatología"},
-	{Prefix: "po", Slug: "podologia", Name: "Podología"},
-	{Prefix: "la", Slug: "laboratorio", Name: "Laboratorio"},
-	{Prefix: "ec", Slug: "ecografia", Name: "Ecografía"},
-	{Prefix: "gi", Slug: "ginecologia-y-obstetricia", Name: "Ginecología y Obstetricia"},
-	{Prefix: "ca", Slug: "cardiologia", Name: "Cardiología"},
-	{Prefix: "ga", Slug: "gastroenterologia", Name: "Gastroenterología"},
-	{Prefix: "of", Slug: "oftalmologia", Name: "Oftalmología"},
-	{Prefix: "ne", Slug: "neurologia", Name: "Neurología"},
-	{Prefix: "ps", Slug: "psicologia", Name: "Psicología"},
-	{Prefix: "de", Slug: "dermatologia", Name: "Dermatología"},
-	{Prefix: "ra", Slug: "radiologia", Name: "Radiología"},
+	{Prefix: "md", Name: "Medicina General"},
+	{Prefix: "do", Name: "Dental (Odontología + Ortodoncia)"},
+	{Prefix: "tr", Name: "Traumatología"},
+	{Prefix: "po", Name: "Podología"},
+	{Prefix: "la", Name: "Laboratorio"},
+	{Prefix: "ec", Name: "Ecografía"},
+	{Prefix: "gi", Name: "Ginecología y Obstetricia"},
+	{Prefix: "ca", Name: "Cardiología"},
+	{Prefix: "ga", Name: "Gastroenterología"},
+	{Prefix: "of", Name: "Oftalmología"},
+	{Prefix: "ne", Name: "Neurología"},
+	{Prefix: "ps", Name: "Psicología"},
+	{Prefix: "de", Name: "Dermatología"},
+	{Prefix: "ra", Name: "Radiología"},
 }
 
 type MigrationReport struct {
@@ -58,7 +57,6 @@ func (m *Module) MigrateSpecialtiesAndServices(tenantId string) (MigrationReport
 			spec := Specialty{
 				TenantId:    tenantId,
 				Prefix:      cs.Prefix,
-				Slug:        cs.Slug,
 				Name:        cs.Name,
 				IsPublished: false,
 			}

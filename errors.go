@@ -15,12 +15,12 @@ const (
 	ErrSpecialtyNotFound     domainError = "specialty not found"
 	ErrSpecialtyInUse        domainError = "specialty in use"
 	ErrSpecialtyPrefixExists domainError = "specialty prefix already exists"
-	ErrSpecialtySlugExists   domainError = "specialty slug already exists"
 	ErrNoRecords             domainError = "service_catalog: no records to save"
 	ErrNoIds                 domainError = "service_catalog: no ids given"
 	ErrSupplyLineExists      domainError = "service_catalog: the recipe already has this supply"
 	ErrSupplyLineNotFound    domainError = "service_catalog: recipe line not found"
 	ErrQuantity              domainError = "service_catalog: the quantity must be greater than zero"
+	ErrUnsupportedCurrency   domainError = "service_catalog: currency not accepted by this catalog"
 )
 
 // decodeError is a request body that could not be read: always 400.
@@ -45,9 +45,9 @@ func statusOf(err error) int {
 		switch e {
 		case ErrNotFound, ErrSpecialtyNotFound, ErrSupplyLineNotFound:
 			return 404
-		case ErrAlreadyExists, ErrSpecialtyPrefixExists, ErrSpecialtySlugExists, ErrSupplyLineExists:
+		case ErrAlreadyExists, ErrSpecialtyPrefixExists, ErrSupplyLineExists:
 			return 409
-		case ErrSpecialtyInUse, ErrNoRecords, ErrNoIds, ErrQuantity:
+		case ErrSpecialtyInUse, ErrNoRecords, ErrNoIds, ErrQuantity, ErrUnsupportedCurrency:
 			return 400
 		}
 	}

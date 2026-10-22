@@ -18,14 +18,14 @@ db := orm.New(mem.New())
 idGenerator := &MyIDGenerator{} // implements model.IDGenerator
 
 module, _ := servicecatalog.New(db, servicecatalog.Deps{
-	IDs: idGenerator,
+	IDs:        idGenerator,
+	Currencies: []string{servicecatalog.CurrencyCLP}, // Si no se indica, el catálogo acepta solo CLP
 })
 
 // Create specialty
 specialty, _ := module.UpsertSpecialty(servicecatalog.Specialty{
 	TenantId: "my-tenant",
 	Prefix:   "md",
-	Slug:     "medicina-general",
 	Name:     "Medicina General",
 })
 
@@ -45,6 +45,7 @@ service, _ := module.CreateService(servicecatalog.Service{
 | Op Name | Description |
 |-----------|-------------|
 | `list_specialties` | List specialties for a tenant |
+| `list_currencies` | List accepted currencies |
 | `get_specialty` | Get specialty by ID |
 | `upsert_specialty` | Create or update specialty |
 | `delete_specialty` | Delete specialty |

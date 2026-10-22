@@ -16,61 +16,60 @@ type Data struct {
 func Load(m *servicecatalog.Module, tenantID string) (Data, error) {
 	data := Data{}
 
-	targetSlugs := []string{"medicina-general", "traumatologia", "ecografia"}
+	targetPrefixes := []string{"md", "tr", "ec"}
 
-	for i, slug := range targetSlugs {
+	for i, prefix := range targetPrefixes {
 		var cs servicecatalog.CanonicalSpecialty
 		found := false
 		for _, canonical := range servicecatalog.CanonicalSpecialties {
-			if canonical.Slug == slug {
+			if canonical.Prefix == prefix {
 				cs = canonical
 				found = true
 				break
 			}
 		}
 		if !found {
-			return data, fmt.Err("seed: canonical specialty not found", slug)
+			return data, fmt.Err("seed: canonical specialty not found", prefix)
 		}
 
 		spec, err := m.UpsertSpecialty(servicecatalog.Specialty{
 			TenantId:    tenantID,
 			Prefix:      cs.Prefix,
-			Slug:        cs.Slug,
 			Name:        cs.Name,
 			Position:    int64(i + 1),
 			IsPublished: true,
 		})
 		if err != nil {
-			return data, fmt.Err("seed: UpsertSpecialty", cs.Slug, err)
+			return data, fmt.Err("seed: UpsertSpecialty", cs.Prefix, err)
 		}
 		data.Specialties = append(data.Specialties, spec)
 	}
 
 	type itemSpec struct {
-		slug  string
+		prefix string
 		sku   string
 		name  string
 		price float64
 	}
 
 	itemsToCreate := []itemSpec{
-		{slug: "medicina-general", sku: "MD001", name: "Consulta Medicina General", price: 25000},
-		{slug: "traumatologia", sku: "TR001", name: "Consulta Traumatología", price: 35000},
-		{slug: "ecografia", sku: "EC001", name: "Ecografía Abdominal", price: 40000},
+		{prefix: "md", sku: "MD001", name: "Consulta Medicina General", price: 25000},
+		{prefix: "tr", sku: "TR001", name: "Consulta Traumatología", price: 35000},
+		{prefix: "ec", sku: "EC001", name: "Ecografía Abdominal", price: 40000},
 	}
 
 	for _, specDef := range itemsToCreate {
 		var specID string
 		found := false
 		for _, spec := range data.Specialties {
-			if spec.Slug == specDef.slug {
+			if spec.Prefix == specDef.prefix {
 				specID = spec.Id
 				found = true
 				break
 			}
 		}
 		if !found {
-			return data, fmt.Err("seed: specialty id not found", specDef.slug)
+			return data, fmt.Err("seed: specialty id not found", specDef.prefix)
 		}
 
 		createdItem, err := m.CreateService(servicecatalog.Service{
@@ -81,6 +80,7 @@ func Load(m *servicecatalog.Module, tenantID string) (Data, error) {
 			Price:       specDef.price,
 			Currency:    currencyCLP,
 			IsActive:    true,
+			TaxTreatment: servicecatalog.TaxExempt,
 		})
 		if err != nil {
 			return data, fmt.Err("seed: CreateService", specDef.sku, err)

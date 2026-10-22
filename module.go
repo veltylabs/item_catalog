@@ -26,19 +26,38 @@ const (
 type Deps struct {
 	IDs       model.IDGenerator // requerido — el módulo NUNCA construye un generador
 	Publisher events.Publisher  // opcional — nil desactiva la publicación de eventos
+	Currencies []string         // monedas que acepta el catálogo (ISO 4217, tres letras mayúsculas), la primera es la de los servicios nuevos; vacío = solo CurrencyCLP
 }
 
 type Module struct {
-	db  *orm.DB
-	ids model.IDGenerator
-	pub events.Publisher
+	db         *orm.DB
+	ids        model.IDGenerator
+	pub        events.Publisher
+	currencies []string
 }
 
 func New(db *orm.DB, deps Deps) (*Module, error) {
 	if deps.IDs == nil {
 		return nil, fmt.Err("service_catalog: Deps.IDs is required")
 	}
-	return &Module{db: db, ids: deps.IDs, pub: deps.Publisher}, nil
+
+	currencies := deps.Currencies
+	if len(currencies) == 0 {
+		currencies = []string{CurrencyCLP}
+	}
+	for _, c := range currencies {
+		if len(c) != 3 {
+			// simplistic check, real check for 3 upper-case ASCII
+			return nil, fmt.Err("service_catalog: Deps.Currencies has an invalid code")
+		}
+		for i := 0; i < 3; i++ {
+			if c[i] < 'A' || c[i] > 'Z' {
+				return nil, fmt.Err("service_catalog: Deps.Currencies has an invalid code")
+			}
+		}
+	}
+
+	return &Module{db: db, ids: deps.IDs, pub: deps.Publisher, currencies: currencies}, nil
 }
 
 // Specialty Service methods
@@ -72,18 +91,6 @@ func (m *Module) GetSpecialtyByPrefix(tenantId, prefix string) (Specialty, error
 	return spec, nil
 }
 
-func (m *Module) GetSpecialtyBySlug(tenantId, slug string) (Specialty, error) {
-	var spec Specialty
-	qb := m.db.Query(&spec).Where(Specialty_.Slug).Eq(slug).Where(Specialty_.TenantId).Eq(tenantId)
-	_, err := ReadOneSpecialty(qb, &spec)
-	if err != nil {
-		if orm.IsNotFound(err) {
-			return Specialty{}, ErrSpecialtyNotFound
-		}
-		return Specialty{}, err
-	}
-	return spec, nil
-}
 
 func (m *Module) ListSpecialties(tenantId string) ([]Specialty, error) {
 	var spec Specialty
@@ -123,15 +130,6 @@ func (m *Module) UpsertSpecialty(spec Specialty) (Specialty, error) {
 		return Specialty{}, err
 	}
 
-	// Validate slug uniqueness per tenant
-	existingSlug, err := m.GetSpecialtyBySlug(spec.TenantId, spec.Slug)
-	if err == nil {
-		if existingSlug.Id != spec.Id {
-			return Specialty{}, ErrSpecialtySlugExists
-		}
-	} else if e, ok := err.(domainError); !ok || e != ErrSpecialtyNotFound {
-		return Specialty{}, err
-	}
 
 	if action == model.ActionCreate {
 		if err := m.db.Create(&spec); err != nil {
@@ -270,6 +268,21 @@ func (m *Module) CreateService(item Service) (Service, error) {
 		return Service{}, ValidationError{Err: err}
 	}
 
+	validCurrency := false
+	for _, c := range m.currencies {
+		if item.Currency == c {
+			validCurrency = true
+			break
+		}
+	}
+	if !validCurrency {
+		return Service{}, ErrUnsupportedCurrency
+	}
+
+	if item.TaxTreatment != TaxTaxed && item.TaxTreatment != TaxExempt {
+		return Service{}, ValidationError{Err: fmt.Err("invalid tax treatment")}
+	}
+
 	// Validate SKU uniqueness per tenant
 	existing, err := m.FindBySKU(item.TenantId, item.Sku)
 	if err == nil {
@@ -292,6 +305,21 @@ func (m *Module) CreateService(item Service) (Service, error) {
 func (m *Module) UpdateService(item Service) (Service, error) {
 	if err := item.Validate(model.ActionUpdate); err != nil {
 		return Service{}, ValidationError{Err: err}
+	}
+
+	validCurrency := false
+	for _, c := range m.currencies {
+		if item.Currency == c {
+			validCurrency = true
+			break
+		}
+	}
+	if !validCurrency {
+		return Service{}, ErrUnsupportedCurrency
+	}
+
+	if item.TaxTreatment != TaxTaxed && item.TaxTreatment != TaxExempt {
+		return Service{}, ValidationError{Err: fmt.Err("invalid tax treatment")}
 	}
 
 	// Verify item exists and belongs to tenant
