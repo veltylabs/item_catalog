@@ -12,7 +12,6 @@ type Specialty struct {
 	Id string
 	TenantId string
 	Prefix string
-	Slug string
 	Name string
 	Description string
 	Position int64
@@ -24,7 +23,7 @@ func (m *Specialty) ModelName() string { return "specialty" }
 
 func (m *Specialty) Schema() []model.Field { return SpecialtyModel.Fields }
 
-func (m *Specialty) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.Prefix, &m.Slug, &m.Name, &m.Description, &m.Position, &m.IsPublished, (*int64)(&m.UpdatedAt)} }
+func (m *Specialty) Pointers() []any { return []any{&m.Id, &m.TenantId, &m.Prefix, &m.Name, &m.Description, &m.Position, &m.IsPublished, (*int64)(&m.UpdatedAt)} }
 
 func (m *Specialty) IsNil() bool { return m == nil }
 
@@ -32,7 +31,6 @@ func (m *Specialty) EncodeFields(w model.FieldWriter) {
 	if m.Id != "" { w.String("id", m.Id) }
 	w.String("tenant_id", m.TenantId)
 	w.String("prefix", m.Prefix)
-	w.String("slug", m.Slug)
 	w.String("name", m.Name)
 	if m.Description != "" { w.String("description", m.Description) }
 	if m.Position != 0 { w.Int("position", m.Position) }
@@ -44,7 +42,6 @@ func (m *Specialty) DecodeFields(r model.FieldReader) {
 	if v, ok := r.String("id"); ok { m.Id = v }
 	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
 	if v, ok := r.String("prefix"); ok { m.Prefix = v }
-	if v, ok := r.String("slug"); ok { m.Slug = v }
 	if v, ok := r.String("name"); ok { m.Name = v }
 	if v, ok := r.String("description"); ok { m.Description = v }
 	if v, ok := r.Int("position"); ok { m.Position = v }
@@ -69,7 +66,6 @@ var Specialty_ = struct {
 	Id string
 	TenantId string
 	Prefix string
-	Slug string
 	Name string
 	Description string
 	Position string
@@ -79,7 +75,6 @@ var Specialty_ = struct {
 	Id: "id",
 	TenantId: "tenant_id",
 	Prefix: "prefix",
-	Slug: "slug",
 	Name: "name",
 	Description: "description",
 	Position: "position",
@@ -133,7 +128,7 @@ func (m *Service) EncodeFields(w model.FieldWriter) {
 	w.String("sku", m.Sku)
 	w.String("name", m.Name)
 	if m.Description != "" { w.String("description", m.Description) }
-	if m.TaxTreatment != "" { w.String("tax_treatment", m.TaxTreatment) }
+	w.String("tax_treatment", m.TaxTreatment)
 	w.Float("price", m.Price)
 	w.String("currency", m.Currency)
 	w.Bool("is_active", m.IsActive)
@@ -772,6 +767,72 @@ func (s *DeleteAgreementArgsList) EncodeFields(_ model.FieldWriter) {}
 func (s *DeleteAgreementArgsList) DecodeFields(_ model.FieldReader) {}
 
 func (m *DeleteAgreementArgs) Validate(action byte) error {
+	return model.ValidateFields(action, m)
+}
+
+type CurrencyOption struct {
+	Code string
+}
+
+func (m *CurrencyOption) ModelName() string { return "currency_option" }
+
+func (m *CurrencyOption) Schema() []model.Field { return CurrencyOptionModel.Fields }
+
+func (m *CurrencyOption) Pointers() []any { return []any{&m.Code} }
+
+func (m *CurrencyOption) IsNil() bool { return m == nil }
+
+func (m *CurrencyOption) EncodeFields(w model.FieldWriter) {
+	w.String("code", m.Code)
+}
+
+func (m *CurrencyOption) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("code"); ok { m.Code = v }
+}
+
+type CurrencyOptionList []*CurrencyOption
+
+func (s *CurrencyOptionList) Len() int             { return len(*s) }
+func (s *CurrencyOptionList) At(i int) model.Fielder { return (*s)[i] }
+func (s *CurrencyOptionList) Append() model.Fielder  { v := &CurrencyOption{}; *s = append(*s, v); return v }
+func (s *CurrencyOptionList) IsNil() bool          { return s == nil }
+func (s *CurrencyOptionList) EncodeFields(_ model.FieldWriter) {}
+func (s *CurrencyOptionList) DecodeFields(_ model.FieldReader) {}
+
+func (m *CurrencyOption) Validate(action byte) error {
+	return model.ValidateFields(action, m)
+}
+
+type ListCurrenciesArgs struct {
+	TenantId string
+}
+
+func (m *ListCurrenciesArgs) ModelName() string { return "list_currencies_args" }
+
+func (m *ListCurrenciesArgs) Schema() []model.Field { return ListCurrenciesArgsModel.Fields }
+
+func (m *ListCurrenciesArgs) Pointers() []any { return []any{&m.TenantId} }
+
+func (m *ListCurrenciesArgs) IsNil() bool { return m == nil }
+
+func (m *ListCurrenciesArgs) EncodeFields(w model.FieldWriter) {
+	w.String("tenant_id", m.TenantId)
+}
+
+func (m *ListCurrenciesArgs) DecodeFields(r model.FieldReader) {
+	if v, ok := r.String("tenant_id"); ok { m.TenantId = v }
+}
+
+type ListCurrenciesArgsList []*ListCurrenciesArgs
+
+func (s *ListCurrenciesArgsList) Len() int             { return len(*s) }
+func (s *ListCurrenciesArgsList) At(i int) model.Fielder { return (*s)[i] }
+func (s *ListCurrenciesArgsList) Append() model.Fielder  { v := &ListCurrenciesArgs{}; *s = append(*s, v); return v }
+func (s *ListCurrenciesArgsList) IsNil() bool          { return s == nil }
+func (s *ListCurrenciesArgsList) EncodeFields(_ model.FieldWriter) {}
+func (s *ListCurrenciesArgsList) DecodeFields(_ model.FieldReader) {}
+
+func (m *ListCurrenciesArgs) Validate(action byte) error {
 	return model.ValidateFields(action, m)
 }
 

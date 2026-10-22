@@ -33,7 +33,7 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 
 	// Create specialty
 	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
-		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
+		TenantId: "t1", Prefix: "aa", Name: "A",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -46,8 +46,9 @@ func TestServiceCard_UnknownOrOtherTenantNotFound(t *testing.T) {
 		Sku:         "sku",
 		Name:        "Service",
 		Price:       100,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +100,7 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 	}
 
 	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
-		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
+		TenantId: "t1", Prefix: "aa", Name: "A",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -113,6 +114,7 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		Price:       1000.50,
 		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -124,8 +126,9 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 		Sku:         "sku2",
 		Name:        "Inactive Service",
 		Price:       500,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +153,7 @@ func TestServiceCard_ReturnsNamePriceCurrencyActive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
-	if name != "Inactive Service" || price != 500 || currency != "USD" || active != false {
+	if name != "Inactive Service" || price != 500 || currency != "CLP" || active != false {
 		t.Fatalf("got unexpected inactive item fields: %q, %v, %q, %v", name, price, currency, active)
 	}
 }

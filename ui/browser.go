@@ -16,16 +16,18 @@ const errListSpecialties = "service_catalog: could not load specialties for the 
 
 // Browser construye la vista de este módulo para el registro en modules/browser.go.
 func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (platformd.UIModule, error) {
+	defaultCurrency := servicecatalog.CurrencyCLP
+
 	servicesView, err := crudview.New(crudview.Config{
 		ParentID:  ID + ".services",
 		Presenter: servicecatalog.NewView(caller),
 		IDs:       ids,
 		NewRecord: func() model.Model {
 			return &servicecatalog.Service{
-				TenantId: tenantID,
-				Currency: "CLP",
-				Price:    0,
-				IsActive: true,
+				TenantId:     tenantID,
+				Currency:     defaultCurrency,
+				TaxTreatment: servicecatalog.TaxExempt,
+				IsActive:     true,
 			}
 		},
 	})
@@ -65,6 +67,22 @@ func Browser(caller router.Caller, ids model.IDGenerator, tenantID string) (plat
 			opts = append(opts, fmt.KeyValue{Key: s.Id, Value: s.Name})
 		}
 		servicesView.SetOptions("specialty_id", opts...)
+	})
+
+	cur := &servicecatalog.CurrencyOptionList{}
+	caller.Call(servicecatalog.ModelName+"."+servicecatalog.OpListCurrencies, nil, cur, func(err error) {
+		if err != nil {
+			dom.Log("service_catalog: could not load currencies for the service form:", err)
+			return
+		}
+		opts := make([]fmt.KeyValue, 0, len(*cur))
+		for _, c := range *cur {
+			opts = append(opts, fmt.KeyValue{Key: c.Code, Value: c.Code})
+		}
+		if len(opts) > 0 {
+			defaultCurrency = opts[0].Key
+		}
+		servicesView.SetOptions("currency", opts...)
 	})
 
 	return platformd.NewGroupUIModule(ID, Label, IconCatalog, []platformd.UIModule{

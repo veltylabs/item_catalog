@@ -16,7 +16,6 @@ func TestSentinelErrorTexts(t *testing.T) {
 		{servicecatalog.ErrSpecialtyNotFound, "specialty not found"},
 		{servicecatalog.ErrSpecialtyInUse, "specialty in use"},
 		{servicecatalog.ErrSpecialtyPrefixExists, "specialty prefix already exists"},
-		{servicecatalog.ErrSpecialtySlugExists, "specialty slug already exists"},
 	}
 
 	for _, c := range cases {

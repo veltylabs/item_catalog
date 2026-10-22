@@ -3,8 +3,10 @@ PLAN: "feat!: one reference code per specialty, currency from the module's list,
 TAG: v0.2.0
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 11217939919563474590
+PR: https://github.com/veltylabs/service_catalog/pull/15
+REVIEWED_COMMIT: 0d25282e7fed9a1d2cf470842fa062f1738b8f03
 ---
 
 > Read AGENTS.md at the repo root before any change.

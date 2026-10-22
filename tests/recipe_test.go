@@ -15,11 +15,11 @@ func recipeService(t *testing.T) (*servicecatalog.Module, servicecatalog.Service
 	if err != nil {
 		t.Fatal(err)
 	}
-	spec, err := m.UpsertSpecialty(servicecatalog.Specialty{TenantId: "tenant-1", Prefix: "do", Slug: "dental", Name: "Dental"})
+	spec, err := m.UpsertSpecialty(servicecatalog.Specialty{TenantId: "tenant-1", Prefix: "do", Name: "Dental"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, err := m.CreateService(servicecatalog.Service{TenantId: "tenant-1", SpecialtyId: spec.Id, Sku: "do1", Name: "Limpieza dental", Price: 20000, Currency: "CLP", IsActive: true})
+	svc, err := m.CreateService(servicecatalog.Service{TenantId: "tenant-1", SpecialtyId: spec.Id, Sku: "do1", Name: "Limpieza dental", Price: 20000, Currency: "CLP", IsActive: true, TaxTreatment: "EXEMPT"})
 	if err != nil {
 		t.Fatal(err)
 	}

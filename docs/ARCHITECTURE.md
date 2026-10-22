@@ -4,7 +4,7 @@
 The `service-catalog` module manages the catalog of services and their specialties for the Velty ecosystem (products and supplies live in `pharmacy_manager` and `supply_manager`). It serves as the source of truth for other modules, such as `appointment-booking`.
 
 ## Entities
-- **Specialty**: Taxonomy entity for the catalog, representing clinical/service specialties with a SKU prefix and public site slug.
+- **Specialty**: taxonomía con un código de referencia de dos letras (prefijo de los SKU).
 - **Service**: A service the business provides. References a `Specialty` via `specialty_id`. Contains SKU, name, description, price, currency and an optional `tax_treatment` (`TAXED` or `EXEMPT`; the rate is not stored here).
   - *Design Note*: other modules (like `appointment-booking`) need the *capability* of being bookable, kept in one place: `ServiceExists`.
 - **Agreement**: Represents a billing/insurer agreement (convenio) associated with a service. A service can have multiple agreements, each specifying an insurer (e.g., FONASA, Isapre X), code, price, and active status.
@@ -24,7 +24,8 @@ The `service-catalog` module manages the catalog of services and their specialti
     - `view.Presenter` (`NewView(caller router.Caller) view.Presenter`, `NewSpecialtyView(caller router.Caller) view.Presenter`) for UI, built with only
       `view`+`model`+`router` — the app chooses the renderer. The specialty is a form field loaded with `SetOptions`; no picker beside the title.
     - Tests run against `storage/mem`, never `tinywasm/sqlite`.
-- **Multi-tenancy**: Every specialty, service, and agreement is associated with a `tenant_id`. SKU, prefix, and slug uniqueness are enforced per tenant.
+- **Multi-tenancy**: Every specialty, service, and agreement is associated with a `tenant_id`. SKU and prefix uniqueness are enforced per tenant.
+- **Accepted Currencies**: `Deps.Currencies` sets the currencies the module accepts (ISO 4217). If empty, it defaults to CLP.
 - **Typed events**: every published event carries a `model.Encodable` payload (`&Specialty`/`&Service`/`&Agreement`),
   never a bare `map`.
 

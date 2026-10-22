@@ -14,6 +14,9 @@ var (
 	BaseInt_FieldInt   = model.Int()
 )
 
+// CurrencyCLP es la moneda por defecto del catálogo.
+const CurrencyCLP = "CLP"
+
 const (
 	TaxTaxed  = "TAXED"
 	TaxExempt = "EXEMPT"
@@ -24,10 +27,8 @@ var SpecialtyModel = model.Definition{
 	Fields: model.Fields{
 		{Name: "id", Type: model.Text(), DB: &model.FieldDB{PK: true}, OmitEmpty: true},
 		{Name: "tenant_id", Type: model.Text(), NotNull: true},
-		{Name: "prefix", Type: input.Text(), Label: "Prefix", NotNull: true,
+		{Name: "prefix", Type: input.Text(), Label: "Reference code", Help: "Two letters every service code (SKU) of this specialty starts with, e.g. MD for MD001.", NotNull: true,
 			Permitted: model.Permitted{Letters: true, Minimum: 2, Maximum: 2}},
-		{Name: "slug", Type: input.Text(), Label: "Reference code", Help: "A short internal code to identify this specialty, not shown to patients. Lowercase words separated by dashes, e.g. cardiology.", NotNull: true,
-			Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 60}},
 		// input.Text()'s own baseline Extra ('.', ',', '(', ')') no incluye
 		// '+' — "Dental (Odontología + Ortodoncia)" lo necesita, así que
 		// este campo declara su propio whitelist para reemplazar el piso
@@ -57,11 +58,11 @@ var ServiceModel = model.Definition{
 		{Name: "specialty_id", Type: input.Select(), Label: "Specialty", Ref: &SpecialtyModel, DB: &model.FieldDB{RefColumn: "id"}, NotNull: true},
 		{Name: "sku", Type: input.Text(), Label: "SKU", NotNull: true, Permitted: model.Permitted{Letters: true, Numbers: true, Extra: []rune{'-'}, Minimum: 1, Maximum: 50}},
 		{Name: "name", Type: input.Text(), Label: "Name", NotNull: true, Permitted: model.Permitted{Minimum: 1, Maximum: 255}},
-		{Name: "description", Type: input.Textarea(), Label: "Description", OmitEmpty: true},
-		{Name: "tax_treatment", Type: input.Select(), Label: "Tax treatment", OmitEmpty: true},
+		{Name: "description", Type: input.Textarea(), Label: "Description", Help: "Public information: patients read it when booking. Say what the service includes, how long it takes or how to prepare.", OmitEmpty: true},
+		{Name: "tax_treatment", Type: input.Select(), Label: "Tax treatment", Help: "Exempt: a health service without IVA (consultations and most exams). Taxed: it carries 19% IVA.", NotNull: true},
 		{Name: "price", Type: input.Decimal(), Label: "Price", NotNull: true},
-		{Name: "currency", Type: input.Text(), Label: "Currency", NotNull: true, Permitted: model.Permitted{Letters: true, Minimum: 3, Maximum: 3}},
-		{Name: "is_active", Type: input.Checkbox(), Label: "Active", NotNull: true},
+		{Name: "currency", Type: input.Select(), Label: "Currency", NotNull: true, Permitted: model.Permitted{Letters: true, Minimum: 3, Maximum: 3}},
+		{Name: "is_active", Type: input.Checkbox(), Label: "Active", Help: "Only active services can be booked and charged. Turn it off to stop offering it without losing its history.", NotNull: true},
 		{Name: "updated_at", Type: model.NanoTime(), OmitEmpty: true},
 	},
 }
@@ -176,6 +177,20 @@ var DeleteAgreementArgsModel = model.Definition{
 	Fields: model.Fields{
 		{Name: "tenant_id", Type: model.Text()},
 		{Name: "id", Type: model.Text()},
+	},
+}
+
+var CurrencyOptionModel = model.Definition{
+	Name: "currency_option",
+	Fields: model.Fields{
+		{Name: "code", Type: model.Text()},
+	},
+}
+
+var ListCurrenciesArgsModel = model.Definition{
+	Name: "list_currencies_args",
+	Fields: model.Fields{
+		{Name: "tenant_id", Type: model.Text()},
 	},
 }
 

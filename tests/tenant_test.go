@@ -23,8 +23,7 @@ func TestTenantIsolation(t *testing.T) {
 	// Create specialty for tenant A
 	specA, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantA,
-		Prefix:   "md",
-		Slug:     "medicina-general",
+		Prefix: "md",
 		Name:     "Medicina General",
 	})
 	if err != nil {
@@ -44,8 +43,9 @@ func TestTenantIsolation(t *testing.T) {
 		Sku:         "md-SKU-A",
 		Name:        "Tenant A Product",
 		Price:       10.0,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 	}
 
 	createdA, err := module.CreateService(itemA)

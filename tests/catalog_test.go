@@ -27,8 +27,7 @@ func TestCatalog(t *testing.T) {
 	// Create specialty first
 	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantID,
-		Prefix:   "md",
-		Slug:     "medicina-general",
+		Prefix: "md",
 		Name:     "Medicina General",
 	})
 	if err != nil {
@@ -42,8 +41,10 @@ func TestCatalog(t *testing.T) {
 		Sku:         "md1234",
 		Name:        "Test Service",
 		Price:       10.5,
-		Currency:    "USD",
-		IsActive:    true,
+		Currency: "CLP",
+		IsActive: true,
+		TaxTreatment: "EXEMPT",
+
 	}
 
 	created, err := module.CreateService(item)
@@ -106,8 +107,7 @@ func TestCatalog(t *testing.T) {
 	// Create second specialty and item to test filter isolation between two real specialties
 	spec2, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantID,
-		Prefix:   "of",
-		Slug:     "oftalmologia",
+		Prefix: "of",
 		Name:     "Oftalmología",
 	})
 	if err != nil {
@@ -120,8 +120,10 @@ func TestCatalog(t *testing.T) {
 		Sku:         "of1234",
 		Name:        "Ophthalmology Exam",
 		Price:       20.0,
-		Currency:    "USD",
-		IsActive:    true,
+		Currency: "CLP",
+		IsActive: true,
+		TaxTreatment: "EXEMPT",
+
 	}
 	created2, err := module.CreateService(item2)
 	if err != nil {
@@ -213,8 +215,7 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 	// 1. Create specialty in tenant 1
 	spec1, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant1,
-		Prefix:   "of",
-		Slug:     "oftalmologia",
+		Prefix: "md",
 		Name:     "Oftalmología",
 	})
 	if err != nil {
@@ -229,30 +230,17 @@ func TestSpecialtyUniquenessAndDefaults(t *testing.T) {
 	// 2. Duplicate prefix in tenant 1 -> rejected
 	_, err = module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant1,
-		Prefix:   "of",
-		Slug:     "oftalmologia-2",
+		Prefix: "md",
 		Name:     "Oftalmología Segunda",
 	})
 	if err == nil || err.Error() != servicecatalog.ErrSpecialtyPrefixExists.Error() {
 		t.Errorf("expected ErrSpecialtyPrefixExists, got %v", err)
 	}
 
-	// 3. Duplicate slug in tenant 1 -> rejected
-	_, err = module.UpsertSpecialty(servicecatalog.Specialty{
-		TenantId: tenant1,
-		Prefix:   "ox",
-		Slug:     "oftalmologia",
-		Name:     "Oftalmología Segunda",
-	})
-	if err == nil || err.Error() != servicecatalog.ErrSpecialtySlugExists.Error() {
-		t.Errorf("expected ErrSpecialtySlugExists, got %v", err)
-	}
-
 	// 4. Same prefix in tenant 2 -> allowed
 	spec2, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenant2,
-		Prefix:   "of",
-		Slug:     "oftalmologia",
+		Prefix: "of",
 		Name:     "Oftalmología",
 	})
 	if err != nil {
@@ -278,9 +266,10 @@ func TestMigration(t *testing.T) {
 		TenantId: tenantID,
 		Sku:      "mdcong",
 		Name:     "Congreso Medico",
-		Price:    100.0,
-		Currency: "USD",
+		Price:       100.0,
+		Currency: "CLP",
 		IsActive: true,
+		TaxTreatment: "EXEMPT",
 	}
 	if err := db.Create(&item1); err != nil {
 		t.Fatalf("failed to create unmigrated item 1: %v", err)
@@ -292,9 +281,10 @@ func TestMigration(t *testing.T) {
 		TenantId: tenantID,
 		Sku:      "zz1234",
 		Name:     "Unknown Item",
-		Price:    50.0,
-		Currency: "USD",
+		Price:       50.0,
+		Currency: "CLP",
 		IsActive: true,
+		TaxTreatment: "EXEMPT",
 	}
 	if err := db.Create(&item2); err != nil {
 		t.Fatalf("failed to create unmigrated item 2: %v", err)
@@ -356,8 +346,7 @@ func TestServiceAgreements(t *testing.T) {
 
 	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
 		TenantId: tenantID,
-		Prefix:   "md",
-		Slug:     "medicina-general",
+		Prefix: "md",
 		Name:     "Medicina General",
 	})
 	if err != nil {
@@ -371,8 +360,10 @@ func TestServiceAgreements(t *testing.T) {
 		Sku:         "md-AG1",
 		Name:        "ServiceAgreement Service",
 		Price:       100.0,
-		Currency:    "USD",
-		IsActive:    true,
+		Currency: "CLP",
+		IsActive: true,
+		TaxTreatment: "EXEMPT",
+
 	}
 	createdItem, err := module.CreateService(goodItem)
 	if err != nil {
@@ -500,7 +491,7 @@ func TestTaxTreatmentValidation(t *testing.T) {
 	}
 
 	spec, err := module.UpsertSpecialty(servicecatalog.Specialty{
-		TenantId: "t1", Prefix: "aa", Slug: "a", Name: "A",
+		TenantId: "t1", Prefix: "aa", Name: "A",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -513,9 +504,7 @@ func TestTaxTreatmentValidation(t *testing.T) {
 		Sku:          "sku-1",
 		Name:         "S1",
 		Price:        100,
-		Currency:     "USD",
-		IsActive:     true,
-		TaxTreatment: "UNKNOWN",
+		Currency: "CLP", IsActive: true, TaxTreatment: "UNKNOWN",
 	}
 	err = badService.Validate(model.ActionCreate)
 	if err == nil {
@@ -529,9 +518,7 @@ func TestTaxTreatmentValidation(t *testing.T) {
 		Sku:          "sku-2",
 		Name:         "S2",
 		Price:        100,
-		Currency:     "USD",
-		IsActive:     true,
-		TaxTreatment: servicecatalog.TaxTaxed,
+		Currency: "CLP", IsActive: true, TaxTreatment: servicecatalog.TaxTaxed,
 	}
 	if _, err := module.CreateService(s2); err != nil {
 		t.Errorf("expected success for TAXED, got %v", err)

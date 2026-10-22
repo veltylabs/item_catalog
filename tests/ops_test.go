@@ -42,8 +42,7 @@ func TestOperations(t *testing.T) {
 	// 0. Upsert Specialty via OP
 	spec := servicecatalog.Specialty{
 		TenantId: tenantID,
-		Prefix:   "md",
-		Slug:     "medicina-general",
+		Prefix: "md",
 		Name:     "Medicina General",
 	}
 	specArgs := servicecatalog.UpsertSpecialtyArgs{
@@ -98,8 +97,9 @@ func TestOperations(t *testing.T) {
 		Sku:         "md-M1",
 		Name:        "Mcp Product",
 		Price:       100.0,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 	}
 	var itemBytes []byte
 	_ = json.Encode(&item, &itemBytes)
@@ -185,8 +185,9 @@ func TestOperations(t *testing.T) {
 		Sku:         "md-M2",
 		Name:        "Mcp Product 2",
 		Price:       200.0,
-		Currency:    "USD",
+		Currency:    "CLP",
 		IsActive:    true,
+		TaxTreatment: "EXEMPT",
 	}
 	upsertArgs := servicecatalog.UpsertServiceArgs{
 		Records: []servicecatalog.Service{upsertService},
