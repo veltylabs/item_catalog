@@ -2,6 +2,8 @@
 PLAN: "feat(ui): the catalog explains itself — description on the group, Servicios and Especialidades"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 3510063836519186808
 ---
 
 > Read AGENTS.md at the repo root before any change.
